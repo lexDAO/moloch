@@ -18,6 +18,7 @@ contract Moloch is ReentrancyGuard {
     uint256 public dilutionBound; // default = 3 - maximum multiplier a YES voter will be obligated to pay in case of mass ragequit
     uint256 public processingReward; // default = 0.1 - amount of ETH to give to whoever processes a proposal
     uint256 public summoningTime; // needed to determine the current period
+    uint256 public minTribute; // min tribute if using backdoor member admission 
     Minion public minion; // address executing member governance updates
 
     
@@ -653,12 +654,12 @@ contract Moloch is ReentrancyGuard {
     QUICK MEMBER
     **********/
     
-    function  quickAddMember (address _newMemberAddress, uint256 _tributeAmount, uint256 _shareDiv) onlyMember public returns(bool) {
+    function  quickAddMember (address _newMemberAddress, uint256 _tributeAmount) onlyMember public returns(bool) {
         require(_newMemberAddress != address(0), "new member applicant cannot be 0");
-        require(_tributeAmount >= _shareDiv, "applicant cannot give less than share div, no fractional shares");
+        require(_tributeAmount >= minTribute, "applicant cannot give less than minTribute, no fractional shares");
 
         //rounds down to nearest number of shares based on tribute offered and share div 
-        uint256 shares = (_tributeAmount) / (_shareDiv);
+        uint256 shares = (_tributeAmount) / (minTribute);
 
         if (members[_newMemberAddress].exists) {
             members[_newMemberAddress].shares = members[_newMemberAddress].shares.add(shares);
