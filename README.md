@@ -16,7 +16,7 @@ try things out:
 
 **open questions:**
 
-* add OZ Context.sol for GSN compatability?
+* add ERC-1404 wrapper for LOOT?
 
 STEAL THIS CODE
 
