@@ -7,7 +7,7 @@ contract MolochSummoner {
     Moloch private baal;
     address[] public molochs;
 
-    event Summoned(address indexed baal, address[] indexed _summoner);
+    event Summoned(address indexed baal, address[] indexed _summoners);
 
     function summonMoloch(
         address[] memory _summoners,
