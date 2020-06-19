@@ -7,9 +7,9 @@ import "./ReentrancyGuard.sol";
 contract Moloch is ReentrancyGuard {
     using SafeMath for uint256;
 
-    /***************
-    GLOBAL CONSTANTS
-    ***************/
+    /****************
+    GOVERNANCE PARAMS
+    ****************/
     uint256 public periodDuration; // default = 17280 = 4.8 hours in seconds (5 periods per day)
     uint256 public votingPeriodLength; // default = 35 periods (7 days)
     uint256 public gracePeriodLength; // default = 35 periods (7 days)
