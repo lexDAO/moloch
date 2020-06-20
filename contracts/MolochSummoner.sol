@@ -1,17 +1,17 @@
 pragma solidity 0.5.17;
 
 import "./Moloch.sol";
-import "./IMinionSummon.sol";
+import "./ISummonMinion.sol";
 
 contract MolochSummoner {
     Moloch private baal;
-    IMinionSummon public minionSummoner;
+    ISummonMinion public minionSummoner;
     address[] public molochs;
 
     event Summoned(address indexed mol, address[] indexed _summoners);
     
     constructor(address _minionSummoner) public {
-       minionSummoner = IMinionSummon(_minionSummoner);
+       minionSummoner = ISummonMinion(_minionSummoner);
     }
 
     function summonMoloch(
