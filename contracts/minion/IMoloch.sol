@@ -1,8 +1,6 @@
 pragma solidity 0.5.17;
 
 interface IMoloch {
-    function depositToken() external view returns (address);
-    
     function getProposalFlags(uint256 proposalId) external view returns (bool[6] memory);
     
     function submitProposal(
