@@ -57,7 +57,6 @@ contract Moloch is ReentrancyGuard {
     address public constant GUILD = address(0xdead);
     address public constant ESCROW = address(0xbeef);
     address public constant TOTAL = address(0xbabe);
-    address public minion; // account executing member governance updates
     mapping (address => mapping(address => uint256)) public userTokenBalances; // userTokenBalances[userAddress][tokenAddress]
 
     enum Vote {
@@ -125,7 +124,6 @@ contract Moloch is ReentrancyGuard {
     constructor(
         address[] memory _summoners,
         address[] memory _approvedTokens,
-        address _minion,
         uint256 _periodDuration,
         uint256 _votingPeriodLength,
         uint256 _gracePeriodLength,
@@ -160,7 +158,6 @@ contract Moloch is ReentrancyGuard {
             approvedTokens.push(_approvedTokens[i]);
         }
         
-        minion = _minion;
         periodDuration = _periodDuration;
         votingPeriodLength = _votingPeriodLength;
         gracePeriodLength = _gracePeriodLength;
@@ -646,28 +643,6 @@ contract Moloch is ReentrancyGuard {
         return getCurrentPeriod() >= startingPeriod.add(votingPeriodLength);
     }
     
-    /**********
-    MINION MGMT
-    **********/
-    function updateGovernance(
-        address _depositToken,
-        uint256 _periodDuration, 
-        uint256 _votingPeriodLength, 
-        uint256 _gracePeriodLength, 
-        uint256 _proposalDeposit, 
-        uint256 _dilutionBound, 
-        uint256 _processingReward) public {
-        require(msg.sender == minion);
-        
-        depositToken = _depositToken;
-        periodDuration = _periodDuration;
-        votingPeriodLength = _votingPeriodLength;
-        gracePeriodLength = _gracePeriodLength;
-        proposalDeposit = _proposalDeposit;
-        dilutionBound = _dilutionBound;
-        processingReward = _processingReward;
-    }
-
     /***************
     GETTER FUNCTIONS
     ***************/
