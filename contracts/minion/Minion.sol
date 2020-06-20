@@ -4,6 +4,7 @@ import "./IMoloch.sol";
 
 contract Minion {
     IMoloch public mol;
+    address public molochApprovedToken;
     string public constant MINION_ACTION_DETAILS = '{"isMinion": true, "title":"MINION", "description":"';
     mapping (uint256 => Action) public actions; // proposalId => Action
 
@@ -18,8 +19,9 @@ contract Minion {
     event ActionProposed(uint256 proposalId, address proposer);
     event ActionExecuted(uint256 proposalId, address executor);
 
-    constructor(address _moloch) public {
+    constructor(address _moloch, address _molochApprovedToken) public {
         mol = IMoloch(_moloch);
+        molochApprovedToken = _molochApprovedToken;
     }
 
     // withdraw funds from the moloch
@@ -47,9 +49,9 @@ contract Minion {
             0,
             0,
             0,
-            getDepositToken(),
+            molochApprovedToken,
             0,
-            getDepositToken(),
+            molochApprovedToken,
             details
         );
 
@@ -85,10 +87,6 @@ contract Minion {
         require(success, "Minion::call failure");
         emit ActionExecuted(_proposalId, msg.sender);
         return retData;
-    }
-    
-    function getDepositToken() public view returns (address) {
-        return mol.depositToken();
     }
 
     function() external payable { }
