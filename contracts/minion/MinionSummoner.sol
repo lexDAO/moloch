@@ -1,5 +1,7 @@
 pragma solidity 0.5.17;
 
+import "./Minion.sol";
+
 contract MinionSummoner {
     // presented by OpenESQ || LexDAO LLC ~ Use at own risk! || chat with us: lexdao.chat 
     Minion private minion;
