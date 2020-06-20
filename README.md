@@ -1,20 +1,28 @@
 # LEXMOL: 
 > LexDAO upgrades MolochDAO for slicker cooperation
 
-INCLUDES:
-* Summoning Circle 🕯️🕯️🕯️
-> Allows MolochDAO to begin with group of Summoners to vote in other members, decide fair split going forward
+*INCLUDES:*
 
-misc:
+* **Summoning Circle** 🕯️🕯️🕯️
+> begin with group of Summoners to vote in other members / decide fair share split going forward
+
+* **Minion Summoner** 🔥👺🔥
+> begin with pre-programmed Minion to execute external txs for member votes
+
+*misc:*
+
 * most recent OpenZeppelin contracts
 * housekeeping updates to remove warnings: [PR](https://github.com/MolochVentures/moloch/pull/86)
 
-try things out:
+These upgrades also reflect a 'more modular Moloch' design, using dual-summoning addresses to expand codebase executing votes.
+
+*try things out:*
+
 >[Mainnet Summoner](https://etherscan.io/address/0x020B12D0503Bbe84eC1F17bBb8ae91679F906Bbc#code)
 
 >[Rinkeby Summoner](https://rinkeby.etherscan.io/address/0x673edc44776f0b1c965dec5b553b9318f144f1ae#code)
 
-**open questions:**
+***open questions:***
 
 * add ERC-1404 wrapper for LOOT?
 
