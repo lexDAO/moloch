@@ -1,6 +1,6 @@
 # LEXMOL:
 [![built-with openzeppelin](https://img.shields.io/badge/built%20with-OpenZeppelin-3677FF)](https://docs.openzeppelin.com/)
-> LexDAO upgrades MolochDAO for slicker cooperation
+> LexDAO upgrades MolochDAO 2 V3
 
 ***UPGRADES INCLUDE:***
 
