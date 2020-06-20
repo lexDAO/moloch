@@ -1,5 +1,7 @@
 pragma solidity 0.5.17;
 
+import "./IMoloch.sol";
+
 contract Minion {
     IMoloch public mol;
     string public constant MINION_ACTION_DETAILS = '{"isMinion": true, "title":"MINION", "description":"';
