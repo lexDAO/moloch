@@ -1,17 +1,18 @@
-# LEXMOL: 
+# LEXMOL:
+[![built-with openzeppelin](https://img.shields.io/badge/built%20with-OpenZeppelin-3677FF)](https://docs.openzeppelin.com/)
 > LexDAO upgrades MolochDAO for slicker cooperation
 
 *INCLUDES:*
 
 * **Summoning Circle** 🕯️🕯️🕯️
-> begin with group of Summoners to vote in other members / decide fair share split going forward
+> begin with group of Summoners to vote in other members / decide fair share split going fwd
 
 * **Minion Summoner** 🔥👺🔥
 > begin with pre-programmed Minion to execute external txs for member votes
 
 *misc:*
 
-* most recent OpenZeppelin contracts
+* most recent [OpenZeppelin contracts](https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/contracts)
 * housekeeping updates to remove warnings: [PR](https://github.com/MolochVentures/moloch/pull/86)
 
 These upgrades also reflect a 'more modular Moloch' design, using dual-summoning addresses to expand codebase executing votes.
