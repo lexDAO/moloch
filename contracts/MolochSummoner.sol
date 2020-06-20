@@ -36,7 +36,7 @@ contract MolochSummoner {
         
         address mol = address(baal);
         molochs.push(mol);
-        minionSummoner.summonMinion(mol);
+        minionSummoner.summonMinion(mol, _approvedTokens[0]);
         emit Summoned(mol, _summoners);
     }
 }
