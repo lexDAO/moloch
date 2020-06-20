@@ -1,6 +1,6 @@
 pragma solidity 0.5.17;
 
-interface Moloch {
+interface IMoloch {
     function depositToken() external view returns (address);
     
     function getProposalFlags(uint256 proposalId) external view returns (bool[6] memory);
@@ -20,7 +20,7 @@ interface Moloch {
 }
 
 contract Minion {
-    Moloch public mol;
+    IMoloch public mol;
     string public constant MINION_ACTION_DETAILS = '{"isMinion": true, "title":"MINION", "description":"';
     mapping (uint256 => Action) public actions; // proposalId => Action
 
@@ -36,8 +36,7 @@ contract Minion {
     event ActionExecuted(uint256 proposalId, address executor);
 
     constructor(address _moloch) public {
-        Moloch moloch = Moloch(_moloch);
-        mol = moloch;
+        mol = IMoloch(_moloch);
     }
 
     // withdraw funds from the moloch
