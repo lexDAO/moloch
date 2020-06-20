@@ -19,9 +19,9 @@ These upgrades also reflect a 'more modular Moloch' design, using dual-summoning
 
 ***try things out:*** 🧙
 
->[Mainnet Summoner](https://etherscan.io/address/0x020B12D0503Bbe84eC1F17bBb8ae91679F906Bbc#code)
+>[Mainnet Summoner](https://etherscan.io/address/0xC6A36b65ab6FBF7a8d2307251F1dE1A9a6Ed549d#code)
 
->[Rinkeby Summoner](https://rinkeby.etherscan.io/address/0x673edc44776f0b1c965dec5b553b9318f144f1ae#code)
+>[Rinkeby Summoner](https://rinkeby.etherscan.io/address/0x4d31e3c4571a0acFD2cCA5c4E274ceD4782d7B31#code)
 
 ***open questions . . .***
 
