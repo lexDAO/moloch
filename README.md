@@ -7,7 +7,7 @@
 * **Summoning Circle** 🕯️🕯️🕯️
 > begin with group of Summoners to vote in other members / decide fair share split going fwd
 
-* **Minion Summoner** 🔥👺🔥
+* **Embedded Minion** 🔥👺🔥
 > begin with pre-programmed Minion to execute external txs for member votes
 
 ***misc:***
