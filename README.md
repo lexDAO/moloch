@@ -1,22 +1,31 @@
-# LEXMOL: 
-> LexDAO upgrades MolochDAO for slicker cooperation
+# LEXMOL:
+[![built-with openzeppelin](https://img.shields.io/badge/built%20with-OpenZeppelin-3677FF)](https://docs.openzeppelin.com/)
+> LexDAO upgrades MolochDAO 2 v3
 
-INCLUDES:
-* Summoning Circle 🕯️🕯️🕯️
-> Allows MolochDAO to begin with group of Summoners to vote in other members, decide fair split going forward
+***UPGRADES INCLUDE:***
 
-misc:
-* most recent OpenZeppelin contracts
+* **Summoning Circle** 🕯️🕯️🕯️
+> begin with group of Summoners to vote in other members / decide fair share split going fwd
+
+* **Embedded Minion** 🔥👺🔥
+> begin with pre-programmed Minion to execute external txs for member votes
+
+***misc:***
+
+* most recent [OpenZeppelin contracts](https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/contracts)
 * housekeeping updates to remove warnings: [PR](https://github.com/MolochVentures/moloch/pull/86)
 
-try things out:
->[Mainnet Summoner](https://etherscan.io/address/0x020B12D0503Bbe84eC1F17bBb8ae91679F906Bbc#code)
+These upgrades also reflect a 'more modular Moloch' design, using dual-summoning addresses to expand codebase executing votes.
 
->[Rinkeby Summoner](https://rinkeby.etherscan.io/address/0x673edc44776f0b1c965dec5b553b9318f144f1ae#code)
+***try things out:*** 🧙
 
-**open questions:**
+>[Mainnet Summoner](https://etherscan.io/address/0xC6A36b65ab6FBF7a8d2307251F1dE1A9a6Ed549d#code)
 
-* add OZ Context.sol for GSN compatability?
+>[Rinkeby Summoner](https://rinkeby.etherscan.io/address/0x4d31e3c4571a0acFD2cCA5c4E274ceD4782d7B31#code)
+
+***open questions . . .***
+
+* add ERC-1404 wrapper for LOOT?
 
 STEAL THIS CODE
 

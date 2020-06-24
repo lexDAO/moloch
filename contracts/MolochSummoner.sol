@@ -1,13 +1,18 @@
 pragma solidity ^0.6.0;
 
 import "./Moloch.sol";
+import "./ISummonMinion.sol";
 
 contract MolochSummoner {
-    // presented by OpenESQ || LexDAO LLC ~ Use at own risk! || chat with us: lexdao.chat 
     Moloch private baal;
+    ISummonMinion public minionSummoner;
     address[] public molochs;
 
-    event Summoned(address indexed baal, address[] indexed _summoner);
+    event Summoned(address indexed mol, address[] indexed _summoners);
+    
+    constructor(address _minionSummoner) public {
+       minionSummoner = ISummonMinion(_minionSummoner);
+    }
 
     function summonMoloch(
         address[] memory _summoners,
@@ -28,10 +33,11 @@ contract MolochSummoner {
             _gracePeriodLength,
             _proposalDeposit,
             _dilutionBound,
-            _processingReward,
-            _defaultTribute);
-
-        molochs.push(address(baal));
-        emit Summoned(address(baal), _summoners);
+            _processingReward);
+        
+        address mol = address(baal);
+        molochs.push(mol);
+        minionSummoner.summonMinion(mol, _approvedTokens[0]);
+        emit Summoned(mol, _summoners);
     }
 }

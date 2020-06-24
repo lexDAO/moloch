@@ -1,8 +1,8 @@
 pragma solidity ^0.6.0;
 
-import "https://github.com/OpenZeppelin/openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+import "./oz/SafeMath.sol";
+import "./oz/IERC20.sol";
+import "./oz/ReentrancyGuard.sol";
 
 contract Moloch is ReentrancyGuard {
     using SafeMath for uint256;
