@@ -38,7 +38,7 @@ contract Minion {
         public
         returns (uint256)
     {
-        // No calls to zero address allows us to check that Minion submitted
+        // No calls to zero address allows us to check that minion submitted
         // the proposal without getting the proposal struct from the moloch
         require(_actionTo != address(0), "Minion::invalid _actionTo");
 
