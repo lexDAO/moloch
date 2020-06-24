@@ -1,8 +1,8 @@
-# LEXMOL:
+# Moloch v2x:
 [![built-with openzeppelin](https://img.shields.io/badge/built%20with-OpenZeppelin-3677FF)](https://docs.openzeppelin.com/)
-> LexDAO upgrades MolochDAO 2 v3
+> LexDAO upgrades MolochDAO 2 v3 *ish*
 
-***UPGRADES INCLUDE:***
+***2X UPGRADES INCLUDE:***
 
 * **Summoning Circle** 🕯️🕯️🕯️
 > begin with group of Summoners to vote in other members / decide fair share split going fwd
@@ -22,10 +22,6 @@ These upgrades also reflect a 'more modular Moloch' design, using dual-summoning
 >[Mainnet Summoner](https://etherscan.io/address/0xC6A36b65ab6FBF7a8d2307251F1dE1A9a6Ed549d#code)
 
 >[Rinkeby Summoner](https://rinkeby.etherscan.io/address/0x4d31e3c4571a0acFD2cCA5c4E274ceD4782d7B31#code)
-
-***open questions . . .***
-
-* add ERC-1404 wrapper for LOOT?
 
 STEAL THIS CODE
 
