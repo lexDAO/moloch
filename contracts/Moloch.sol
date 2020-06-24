@@ -1,4 +1,4 @@
-pragma solidity ^0.6.0;
+pragma solidity 0.6.0;
 
 import "./oz/SafeMath.sol";
 import "./oz/IERC20.sol";
@@ -17,7 +17,7 @@ contract Moloch is ReentrancyGuard {
     uint256 public dilutionBound; // default = 3 - maximum multiplier a YES voter will be obligated to pay in case of mass ragequit
     uint256 public processingReward; // default = 0.1 - amount of ETH to give to whoever processes a proposal
     uint256 public summoningTime; // needed to determine the current period
-    uint256 public defaultTribute; //default tribute amount 
+    uint256 public defaultTribute; // default tribute amount 
 
     address public depositToken; // deposit token contract reference; default = wETH
 
@@ -30,7 +30,7 @@ contract Moloch is ReentrancyGuard {
     uint256 constant MAX_NUMBER_OF_SHARES_AND_LOOT = 10**18; // maximum number of shares that can be minted
     uint256 constant MAX_TOKEN_WHITELIST_COUNT = 400; // maximum number of whitelisted tokens
     uint256 constant MAX_TOKEN_GUILDBANK_COUNT = 200; // maximum number of tokens with non-zero balance in guildbank
-    uint256 constant MAX_SUMMONERS = 100; //maximum number of summoners 
+    uint256 constant MAX_SUMMONERS = 100; // maximum number of summoners 
 
     // ***************
     // EVENTS
@@ -178,8 +178,6 @@ contract Moloch is ReentrancyGuard {
         summoningTime = now;
         totalShares = _summoners.length;
     }
-
-
 
     /*****************
     PROPOSAL FUNCTIONS
@@ -656,9 +654,9 @@ contract Moloch is ReentrancyGuard {
         return getCurrentPeriod() >= startingPeriod.add(votingPeriodLength);
     }
     
-    /*****************
+    /*********************
     SUMMONER ADD FUNCTIONS
-    *****************/    
+    *********************/    
     function giveMeShares (uint256 _tribute) public onlySummoner {
         require(_tribute == defaultTribute, "Can only give the default tribute, otherwise submit a proposal");
 
@@ -744,6 +742,5 @@ contract Moloch is ReentrancyGuard {
         }
 
         return (balance / totalSharesAndLoot) * shares;
-    }
-    
+    }  
 }
