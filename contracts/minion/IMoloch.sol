@@ -1,4 +1,4 @@
-pragma solidity 0.5.17;
+pragma solidity 0.6.0;
 
 interface IMoloch {
     function getProposalFlags(uint256 proposalId) external view returns (bool[6] memory);
