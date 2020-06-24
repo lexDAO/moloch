@@ -1,4 +1,4 @@
-pragma solidity 0.5.17;
+pragma solidity ^0.6.0;
 
 import "./Moloch.sol";
 import "./ISummonMinion.sol";
@@ -22,7 +22,8 @@ contract MolochSummoner {
         uint256 _gracePeriodLength,
         uint256 _proposalDeposit,
         uint256 _dilutionBound,
-        uint256 _processingReward) public {
+        uint256 _processingReward,
+        uint256 _defaultTribute) public {
 
         baal = new Moloch(
             _summoners,
