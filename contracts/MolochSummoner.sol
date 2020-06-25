@@ -33,7 +33,8 @@ contract MolochSummoner {
             _gracePeriodLength,
             _proposalDeposit,
             _dilutionBound,
-            _processingReward);
+            _processingReward, 
+            _defaultTribute);
         
         address mol = address(baal);
         molochs.push(mol);
