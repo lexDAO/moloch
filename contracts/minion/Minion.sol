@@ -89,5 +89,5 @@ contract Minion {
         return retData;
     }
 
-    function() external payable { }
+    function() external payable {}
 }
