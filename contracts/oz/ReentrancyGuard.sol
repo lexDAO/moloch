@@ -1,4 +1,4 @@
-pragma solidity 0.6.0;
+pragma solidity 0.5.17;
 
 /**
  * @dev Contract module that helps prevent reentrant calls to a function.
