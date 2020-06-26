@@ -321,6 +321,7 @@ contract Moloch is ReentrancyGuard {
     // EVENTS
     // ***************
     event SummonComplete(address[] indexed summoners, address[] tokens, uint256 summoningTime, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 proposalDeposit, uint256 dilutionBound, uint256 processingReward);
+    event MakeSummoningTribute(address indexed memberAddress, uint256 indexed shares);
     event SubmitProposal(address indexed applicant, uint256 sharesRequested, uint256 lootRequested, uint256 tributeOffered, address tributeToken, uint256 paymentRequested, address paymentToken, string details, bool[6] flags, uint256 proposalId, address indexed delegateKey, address indexed memberAddress);
     event SponsorProposal(address indexed delegateKey, address indexed memberAddress, uint256 proposalId, uint256 proposalIndex, uint256 startingPeriod);
     event SubmitVote(uint256 proposalId, uint256 indexed proposalIndex, address indexed delegateKey, address indexed memberAddress, uint8 uintVote);
@@ -881,7 +882,7 @@ contract Moloch is ReentrancyGuard {
         emit Withdraw(msg.sender, token, amount);
     }
 
-    function collectTokens(address token) public onlyDelegate nonReentrant {
+    function collectTokens(address token) public nonReentrant onlyDelegate {
         uint256 amountToCollect = IERC20(token).balanceOf(address(this)).sub(userTokenBalances[TOTAL][token]);
         // only collect if 1) there are tokens to collect 2) token is whitelisted 3) token has non-zero balance
         require(amountToCollect > 0, 'no tokens to collect');
@@ -935,15 +936,16 @@ contract Moloch is ReentrancyGuard {
     /***********************
     SUMMONING CIRCLE TRIBUTE
     ***********************/    
-    function makeSummoningTribute(uint256 tribute) public {
+    function makeSummoningTribute(uint256 tribute) public onlyMember {
         require(now < summoningTermination, "summoning terminated");
         require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "transfer failed");
-        require(members[msg.sender].exists == true); // designed for initial summoning group / save size reference
         
         uint256 shares = tribute.div(summoningRate);
         members[msg.sender].shares += shares;
         unsafeAddToBalance(GUILD, depositToken, tribute);
         totalShares += shares;
+        
+        emit MakeSummoningTribute(msg.sender, tribute);
     } 
 
     /***************
@@ -1014,9 +1016,7 @@ contract Moloch is ReentrancyGuard {
 
 contract MolochSummoner {
     Moloch private baal;
-    address[] public molochs;
-
-    event Summoned(address indexed mol, address[] indexed _summoners);
+    event Summoned(address indexed baal, address[] indexed _summoners);
 
     function summonMoloch(
         address[] memory _summoners,
@@ -1042,8 +1042,6 @@ contract MolochSummoner {
             _summoningRate,
             _summoningTermination);
         
-        address mol = address(baal);
-        molochs.push(mol);
-        emit Summoned(mol, _summoners);
+        emit Summoned(address(baal), _summoners);
     }
 }
