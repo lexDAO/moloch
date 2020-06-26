@@ -321,7 +321,7 @@ contract Moloch is ReentrancyGuard {
     // EVENTS
     // ***************
     event SummonComplete(address[] indexed summoners, address[] tokens, uint256 summoningTime, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 proposalDeposit, uint256 dilutionBound, uint256 processingReward);
-    event MakeSummoningTribute(address indexed memberAddress, uint256 indexed shares);
+    event MakeSummoningTribute(address indexed memberAddress, uint256 indexed tribute, uint256 indexed shares);
     event SubmitProposal(address indexed applicant, uint256 sharesRequested, uint256 lootRequested, uint256 tributeOffered, address tributeToken, uint256 paymentRequested, address paymentToken, string details, bool[6] flags, uint256 proposalId, address indexed delegateKey, address indexed memberAddress);
     event SponsorProposal(address indexed delegateKey, address indexed memberAddress, uint256 proposalId, uint256 proposalIndex, uint256 startingPeriod);
     event SubmitVote(uint256 proposalId, uint256 indexed proposalIndex, address indexed delegateKey, address indexed memberAddress, uint8 uintVote);
@@ -456,6 +456,23 @@ contract Moloch is ReentrancyGuard {
         summoningTermination = _summoningTermination;
         summoningTime = now;
         totalShares = _summoners.length;
+    }
+    
+    /*************************
+    SUMMONING TRIBUTE FUNCTION
+    *************************/    
+    function makeSummoningTribute(uint256 tribute) public {
+        require(now < summoningTermination);
+        require(members[msg.sender].exists == true);
+        
+        IERC20(depositToken).transferFrom(msg.sender, address(this), tribute);
+        unsafeAddToBalance(GUILD, depositToken, tribute);
+        
+        uint256 shares = tribute.div(summoningRate).div(10**uint256(18));
+        members[msg.sender].shares += shares;
+        totalShares += shares;
+        
+        emit MakeSummoningTribute(msg.sender, tribute, shares);
     }
 
     /*****************
@@ -933,21 +950,6 @@ contract Moloch is ReentrancyGuard {
         return getCurrentPeriod() >= startingPeriod.add(votingPeriodLength);
     }
     
-    /***********************
-    SUMMONING CIRCLE TRIBUTE
-    ***********************/    
-    function makeSummoningTribute(uint256 tribute) public {
-        require(now < summoningTermination);
-        require(members[msg.sender].exists == true);
-        IERC20(depositToken).transferFrom(msg.sender, address(this), tribute);
-        unsafeAddToBalance(GUILD, depositToken, tribute);
-        uint256 shares = tribute.div(summoningRate);
-        members[msg.sender].shares += shares;
-        totalShares += shares;
-        
-        emit MakeSummoningTribute(msg.sender, tribute);
-    } 
-
     /***************
     GETTER FUNCTIONS
     ***************/
