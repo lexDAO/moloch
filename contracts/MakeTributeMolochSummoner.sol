@@ -301,9 +301,9 @@ contract Moloch is ReentrancyGuard {
     uint256 public proposalDeposit; // default = 10 ETH (~$1,000 worth of ETH at contract deployment)
     uint256 public dilutionBound; // default = 3 - maximum multiplier a YES voter will be obligated to pay in case of mass ragequit
     uint256 public processingReward; // default = 0.1 - amount of ETH to give to whoever processes a proposal
+    uint256 public summoningRate; //  rate to convert into shares during summoning tribute time
+    uint256 public summoningTermination; // termination time for summoning tribute
     uint256 public summoningTime; // needed to determine the current period
-    uint256 public tributeRate; // default tribute rate to convert into shares during summoning termination time
-    uint256 public tributeTermination; // termination time for tributes
 
     address public depositToken; // deposit token contract reference; default = wETH
 
@@ -417,8 +417,8 @@ contract Moloch is ReentrancyGuard {
         uint256 _proposalDeposit,
         uint256 _dilutionBound,
         uint256 _processingReward,
-        uint256 _tributeRate,
-        uint256 _tributeTermination
+        uint256 _summoningRate,
+        uint256 _summoningTermination
     ) public {
         require(_periodDuration > 0, "_periodDuration cannot be 0");
         require(_votingPeriodLength > 0, "_votingPeriodLength cannot be 0");
@@ -451,8 +451,8 @@ contract Moloch is ReentrancyGuard {
         proposalDeposit = _proposalDeposit;
         dilutionBound = _dilutionBound;
         processingReward = _processingReward;
-        tributeRate = _tributeRate;
-        tributeTermination = _tributeTermination;
+        summoningRate = _summoningRate;
+        summoningTermination = _summoningTermination;
         summoningTime = now;
         totalShares = _summoners.length;
     }
@@ -935,15 +935,15 @@ contract Moloch is ReentrancyGuard {
     /***********************
     SUMMONING CIRCLE TRIBUTE
     ***********************/    
-    function makeTribute(uint256 tribute) public {
-        require(now < tributeTermination);
-        require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "tribute transfer failed");
-        require(members[msg.sender].exists == true);
+    function makeSummoningTribute(uint256 tribute) public {
+        require(now < summoningTermination, "summoning terminated");
+        require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "transfer failed");
+        require(members[msg.sender].exists == true); // designed for initial summoning group / save size reference
         
-        uint256 shares = tribute.div(tributeRate);
-        members[msg.sender].shares = members[msg.sender].shares.add(shares);
+        uint256 shares = tribute.div(summoningRate);
+        members[msg.sender].shares += shares;
         unsafeAddToBalance(GUILD, depositToken, tribute);
-        totalShares = totalShares.add(shares);
+        totalShares += shares;
     } 
 
     /***************
@@ -1027,8 +1027,8 @@ contract MolochSummoner {
         uint256 _proposalDeposit,
         uint256 _dilutionBound,
         uint256 _processingReward,
-        uint256 _tributeRate,
-        uint256 _tributeTermination) public {
+        uint256 _summoningRate,
+        uint256 _summoningTermination) public {
 
         baal = new Moloch(
             _summoners,
@@ -1039,8 +1039,8 @@ contract MolochSummoner {
             _proposalDeposit,
             _dilutionBound,
             _processingReward, 
-            _tributeRate,
-            _tributeTermination);
+            _summoningRate,
+            _summoningTermination);
         
         address mol = address(baal);
         molochs.push(mol);
