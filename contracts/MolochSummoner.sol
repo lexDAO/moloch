@@ -1,4 +1,4 @@
-pragma solidity ^0.6.0;
+pragma solidity 0.5.17;
 
 import "./Moloch.sol";
 import "./ISummonMinion.sol";
@@ -6,12 +6,11 @@ import "./ISummonMinion.sol";
 contract MolochSummoner {
     Moloch private baal;
     ISummonMinion public minionSummoner;
-    address[] public molochs;
-
-    event Summoned(address indexed mol, address[] indexed _summoners);
+    
+    event Summoned(address indexed baal, address[] indexed _summoners);
     
     constructor(address _minionSummoner) public {
-       minionSummoner = ISummonMinion(_minionSummoner);
+        minionSummoner = ISummonMinion(_minionSummoner);
     }
 
     function summonMoloch(
@@ -23,7 +22,8 @@ contract MolochSummoner {
         uint256 _proposalDeposit,
         uint256 _dilutionBound,
         uint256 _processingReward,
-        uint256 _defaultTribute) public {
+        uint256 _summoningRate,
+        uint256 _summoningTermination) public {
 
         baal = new Moloch(
             _summoners,
@@ -34,11 +34,10 @@ contract MolochSummoner {
             _proposalDeposit,
             _dilutionBound,
             _processingReward, 
-            _defaultTribute);
+            _summoningRate,
+            _summoningTermination);
         
-        address mol = address(baal);
-        molochs.push(mol);
-        minionSummoner.summonMinion(mol, _approvedTokens[0]);
-        emit Summoned(mol, _summoners);
+        minionSummoner.summonMinion(address(baal), _approvedTokens[0]);
+        emit Summoned(address(baal), _summoners);
     }
 }
