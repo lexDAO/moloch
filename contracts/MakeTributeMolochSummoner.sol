@@ -932,16 +932,16 @@ contract Moloch is ReentrancyGuard {
         return getCurrentPeriod() >= startingPeriod.add(votingPeriodLength);
     }
     
-    /*************************
-    SUMMONER TRIBUTE FUNCTIONS
-    *************************/    
+    /***********************
+    SUMMONING CIRCLE TRIBUTE
+    ***********************/    
     function makeTribute(uint256 tribute) public {
         require(now < tributeTermination);
         require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "tribute transfer failed");
         require(members[msg.sender].exists == true);
+        
         uint256 shares = tribute.div(tributeRate);
         members[msg.sender].shares = members[msg.sender].shares.add(shares);
-
         unsafeAddToBalance(GUILD, depositToken, tribute);
         totalShares = totalShares.add(shares);
     } 
