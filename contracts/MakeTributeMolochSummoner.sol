@@ -941,10 +941,6 @@ contract Moloch is ReentrancyGuard {
         require(members[msg.sender].exists == true);
         uint256 shares = tribute.div(tributeRate);
         members[msg.sender].shares = members[msg.sender].shares.add(shares);
-        
-        if (userTokenBalances[GUILD][depositToken] == 0 && tribute > 0) {
-                totalGuildBankTokens += 1;
-        }
 
         unsafeAddToBalance(GUILD, depositToken, tribute);
         totalShares = totalShares.add(shares);
