@@ -936,10 +936,10 @@ contract Moloch is ReentrancyGuard {
     /***********************
     SUMMONING CIRCLE TRIBUTE
     ***********************/    
-    function makeSummoningTribute(uint256 tribute) public onlyMember {
-        require(now < summoningTermination, "summoning terminated");
-        require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "transfer failed");
-        
+    function makeSummoningTribute(uint256 tribute) public {
+        require(now < summoningTermination);
+        require(members[msg.sender].exists == true);
+        IERC20(depositToken).transferFrom(msg.sender, address(this), tribute);
         unsafeAddToBalance(GUILD, depositToken, tribute);
         uint256 shares = tribute.div(summoningRate);
         members[msg.sender].shares += shares;
@@ -1014,9 +1014,19 @@ contract Moloch is ReentrancyGuard {
     }  
 }
 
+interface ISummonMinion {
+    function summonMinion(address _moloch, address _molochApprovedToken) external;
+}
+
 contract MolochSummoner {
     Moloch private baal;
+    ISummonMinion public minionSummoner;
+    
     event Summoned(address indexed baal, address[] indexed _summoners);
+    
+    constructor(address _minionSummoner) public {
+       minionSummoner = ISummonMinion(_minionSummoner);
+    }
 
     function summonMoloch(
         address[] memory _summoners,
@@ -1042,6 +1052,7 @@ contract MolochSummoner {
             _summoningRate,
             _summoningTermination);
         
+        minionSummoner.summonMinion(address(baal), _approvedTokens[0]);
         emit Summoned(address(baal), _summoners);
     }
 }
