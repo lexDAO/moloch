@@ -940,9 +940,9 @@ contract Moloch is ReentrancyGuard {
         require(now < summoningTermination, "summoning terminated");
         require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "transfer failed");
         
+        unsafeAddToBalance(GUILD, depositToken, tribute);
         uint256 shares = tribute.div(summoningRate);
         members[msg.sender].shares += shares;
-        unsafeAddToBalance(GUILD, depositToken, tribute);
         totalShares += shares;
         
         emit MakeSummoningTribute(msg.sender, tribute);
