@@ -16,8 +16,9 @@ contract Moloch is ReentrancyGuard {
     uint256 public proposalDeposit; // default = 10 ETH (~$1,000 worth of ETH at contract deployment)
     uint256 public dilutionBound; // default = 3 - maximum multiplier a YES voter will be obligated to pay in case of mass ragequit
     uint256 public processingReward; // default = 0.1 - amount of ETH to give to whoever processes a proposal
+    uint256 public summoningRate; // rate to convert into shares during summoning tribute time
+    uint256 public summoningTermination; // termination time for summoning tribute
     uint256 public summoningTime; // needed to determine the current period
-    uint256 public defaultTribute; // default tribute amount 
 
     address public depositToken; // deposit token contract reference; default = wETH
 
@@ -30,12 +31,12 @@ contract Moloch is ReentrancyGuard {
     uint256 constant MAX_NUMBER_OF_SHARES_AND_LOOT = 10**18; // maximum number of shares that can be minted
     uint256 constant MAX_TOKEN_WHITELIST_COUNT = 400; // maximum number of whitelisted tokens
     uint256 constant MAX_TOKEN_GUILDBANK_COUNT = 200; // maximum number of tokens with non-zero balance in guildbank
-    uint256 constant MAX_SUMMONERS = 100; // maximum number of summoners 
 
     // ***************
     // EVENTS
     // ***************
     event SummonComplete(address[] indexed summoners, address[] tokens, uint256 summoningTime, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 proposalDeposit, uint256 dilutionBound, uint256 processingReward);
+    event MakeSummoningTribute(address indexed memberAddress, uint256 indexed shares);
     event SubmitProposal(address indexed applicant, uint256 sharesRequested, uint256 lootRequested, uint256 tributeOffered, address tributeToken, uint256 paymentRequested, address paymentToken, string details, bool[6] flags, uint256 proposalId, address indexed delegateKey, address indexed memberAddress);
     event SponsorProposal(address indexed delegateKey, address indexed memberAddress, uint256 proposalId, uint256 proposalIndex, uint256 startingPeriod);
     event SubmitVote(uint256 proposalId, uint256 indexed proposalIndex, address indexed delegateKey, address indexed memberAddress, uint8 uintVote);
@@ -72,7 +73,6 @@ contract Moloch is ReentrancyGuard {
         uint256 shares; // the # of voting shares assigned to this member
         uint256 loot; // the loot amount available to this member (combined with shares on ragequit)
         bool exists; // always true once a member has been created
-        bool summoner; //true if added in constructor 
         uint256 highestIndexYesVote; // highest proposal index # on which the member voted YES
         uint256 jailed; // set to proposalIndex of a passing guild kick proposal for this member, prevents voting on and sponsoring proposals
     }
@@ -123,11 +123,6 @@ contract Moloch is ReentrancyGuard {
         require(members[memberAddressByDelegateKey[msg.sender]].shares > 0, "not a delegate");
         _;
     }
-    
-    modifier onlySummoner {
-        require(members[msg.sender].summoner == true, "not a summoner");
-        _;
-    }
 
     constructor(
         address[] memory _summoners,
@@ -138,7 +133,8 @@ contract Moloch is ReentrancyGuard {
         uint256 _proposalDeposit,
         uint256 _dilutionBound,
         uint256 _processingReward,
-        uint256 _defaultTribute
+        uint256 _summoningRate,
+        uint256 _summoningTermination
     ) public {
         require(_periodDuration > 0, "_periodDuration cannot be 0");
         require(_votingPeriodLength > 0, "_votingPeriodLength cannot be 0");
@@ -149,20 +145,17 @@ contract Moloch is ReentrancyGuard {
         require(_approvedTokens.length > 0, "need at least one approved token");
         require(_approvedTokens.length <= MAX_TOKEN_WHITELIST_COUNT, "too many tokens");
         require(_proposalDeposit >= _processingReward, "_proposalDeposit cannot be smaller than _processingReward");
-        require(_summoners.length <= MAX_SUMMONERS, "can't have more than 100 summoners");
         
         depositToken = _approvedTokens[0];
         // NOTE: move event up here, avoid stack too deep if too many approved tokens
         emit SummonComplete(_summoners, _approvedTokens, now, _periodDuration, _votingPeriodLength, _gracePeriodLength, _proposalDeposit, _dilutionBound, _processingReward);
         
         for (uint256 i = 0; i < _summoners.length; i++) {
-            require(_summoners[i] != address(0), "summoner cannot be 0");
-            members[_summoners[i]] = Member(_summoners[i], 1, 0, true, true, 0, 0);
+            members[_summoners[i]] = Member(_summoners[i], 1, 0, true, 0, 0);
             memberAddressByDelegateKey[_summoners[i]] = _summoners[i];
         }
 
         for (uint256 i = 0; i < _approvedTokens.length; i++) {
-            require(_approvedTokens[i] != address(0), "_approvedToken cannot be 0");
             require(!tokenWhitelist[_approvedTokens[i]], "duplicate approved token");
             tokenWhitelist[_approvedTokens[i]] = true;
             approvedTokens.push(_approvedTokens[i]);
@@ -174,7 +167,8 @@ contract Moloch is ReentrancyGuard {
         proposalDeposit = _proposalDeposit;
         dilutionBound = _dilutionBound;
         processingReward = _processingReward;
-        defaultTribute = _defaultTribute;
+        summoningRate = _summoningRate;
+        summoningTermination = _summoningTermination;
         summoningTime = now;
         totalShares = _summoners.length;
     }
@@ -407,7 +401,7 @@ contract Moloch is ReentrancyGuard {
                 }
 
                 // use applicant address as delegateKey by default
-                members[proposal.applicant] = Member(proposal.applicant, proposal.sharesRequested, proposal.lootRequested, true, false, 0, 0);
+                members[proposal.applicant] = Member(proposal.applicant, proposal.sharesRequested, proposal.lootRequested, true, 0, 0);
                 memberAddressByDelegateKey[proposal.applicant] = proposal.applicant;
             }
 
@@ -603,7 +597,7 @@ contract Moloch is ReentrancyGuard {
         emit Withdraw(msg.sender, token, amount);
     }
 
-    function collectTokens(address token) public onlyDelegate nonReentrant {
+    function collectTokens(address token) public nonReentrant onlyDelegate {
         uint256 amountToCollect = IERC20(token).balanceOf(address(this)).sub(userTokenBalances[TOTAL][token]);
         // only collect if 1) there are tokens to collect 2) token is whitelisted 3) token has non-zero balance
         require(amountToCollect > 0, 'no tokens to collect');
@@ -654,31 +648,21 @@ contract Moloch is ReentrancyGuard {
         return getCurrentPeriod() >= startingPeriod.add(votingPeriodLength);
     }
     
-    /*********************
-    SUMMONER ADD FUNCTIONS
-    *********************/    
-    function giveMeShares (uint256 _tribute) public onlySummoner {
-        require(_tribute == defaultTribute, "Can only give the default tribute, otherwise submit a proposal");
-
-        _giveShares(_tribute); 
-    } 
-    
-    function _giveShares(uint256 _tribute) internal {
-        require(IERC20(depositToken).transferFrom(msg.sender, address(this), _tribute), "donation transfer failed");
-
-        /*
-        * @dev a way for the summoners to get a normal amount of shares for contributing a default amount of tribute
-        * assumes that that the DAO has an established tribute to shares ratio that is 1:1 (e.g. 10 ETH = 10 Shares)
-        * also restricted to summoners set in the constructor and bound by the defaultTribute, so too many shares aren't issued
-        */ 
-        uint256 decimalFactor = 10**uint256(18);
-        uint256 shares = (_tribute).div(decimalFactor);
-        members[msg.sender].shares = members[msg.sender].shares.add(shares)-1;
+    /***********************
+    SUMMONING CIRCLE TRIBUTE
+    ***********************/    
+    function makeSummoningTribute(uint256 tribute) public {
+        require(now < summoningTermination);
+        require(members[msg.sender].exists == true);
+        require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "tributed failed");
+        unsafeAddToBalance(GUILD, depositToken, tribute);
+        uint256 shares = tribute.div(summoningRate);
+        members[msg.sender].shares += shares;
+        totalShares += shares;
         
-        unsafeAddToBalance(GUILD, depositToken, _tribute);
-        totalShares = totalShares.add(shares);
-    }
-    
+        emit MakeSummoningTribute(msg.sender, tribute);
+    } 
+
     /***************
     GETTER FUNCTIONS
     ***************/
