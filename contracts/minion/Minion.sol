@@ -6,7 +6,7 @@ contract Minion {
     IMoloch public mol;
     address public molochApprovedToken;
     string public constant MINION_ACTION_DETAILS = '{"isMinion": true, "title":"MINION", "description":"';
-    mapping (uint256 => Action) public actions; // proposalId => Action
+    mapping(uint256 => Action) public actions; // proposalId => Action
 
     struct Action {
         uint256 value;
