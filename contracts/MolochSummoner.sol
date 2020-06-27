@@ -11,6 +11,7 @@ contract MolochSummoner {
     
     constructor(address _minionSummoner) public {
         minionSummoner = ISummonMinion(_minionSummoner);
+        minionSummoner.setMolochSummoner(address(this));
     }
 
     function summonMoloch(
