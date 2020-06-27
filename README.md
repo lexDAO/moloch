@@ -4,7 +4,7 @@
 
 ***2X UPGRADES INCLUDE:***
 
-* **Summoning Circle** 🕯️🕯️🕯️
+* **Summoning Circle** 🕯️👹🕯️
 > Summoning Circle /array/ votes in other members / decides fair shares going fwd
 
 * **Summoning Sale** 💰⌛💰
