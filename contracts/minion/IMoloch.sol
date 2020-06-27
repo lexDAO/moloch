@@ -3,6 +3,8 @@ pragma solidity 0.5.17;
 interface IMoloch {
     function getProposalFlags(uint256 proposalId) external view returns (bool[6] memory);
     
+    function setMinion(address minion) external;
+    
     function submitProposal(
         address applicant,
         uint256 sharesRequested,
