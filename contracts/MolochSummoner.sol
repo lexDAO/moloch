@@ -4,12 +4,10 @@ import "./Moloch.sol";
 import "./ISummonMinion.sol";
 
 contract MolochSummoner {
-    Moloch private baal;
+    Moloch private moloch;
     ISummonMinion public minionSummoner;
-    
-    event Summoned(address indexed baal, address[] indexed _summoners);
-    
-    constructor(address _minionSummoner) public {
+
+    constructor(address _minionSummoner) public { // locks minionSummoner to this contract set
         minionSummoner = ISummonMinion(_minionSummoner);
         minionSummoner.setMolochSummoner(address(this));
     }
@@ -24,9 +22,10 @@ contract MolochSummoner {
         uint256 _dilutionBound,
         uint256 _processingReward,
         uint256 _summoningRate,
-        uint256 _summoningTermination) public {
+        uint256 _summoningTermination,
+        bytes32 _manifesto) public {
 
-        baal = new Moloch(
+        moloch = new Moloch(
             _summoners,
             _approvedTokens,
             _periodDuration,
@@ -36,9 +35,9 @@ contract MolochSummoner {
             _dilutionBound,
             _processingReward, 
             _summoningRate,
-            _summoningTermination);
+            _summoningTermination,
+            _manifesto);
         
-        minionSummoner.summonMinion(address(baal), _approvedTokens[0]);
-        emit Summoned(address(baal), _summoners);
+        minionSummoner.summonMinion(address(moloch), _approvedTokens[0]); // summons minion for new moloch
     }
 }
