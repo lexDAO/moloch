@@ -8,10 +8,10 @@
 > Summoning Circle / [array] / votes in other members / decides fair shares going fwd
 
 * **Summoning Sale** 💰 ⌛ 💰
-> Summoning Circle can buy into member shares at summoned rate during sale period
+> Summoning Circle can buy votes at `summoningRate` w/ `depositToken` tribute before `summoningTermination` epoch time
 
 * **Minion Attaché** 🕯️ 👺 🕯️
-> Moloch w/ Minion summoned to execute external txs for member votes
+> `Moloch` w/ `Minion` summoned to execute external txs for member votes
 
 ***misc:***
 
