@@ -12,14 +12,14 @@ contract MinionSummoner {
     
     event Summoned(address indexed minion, address indexed moloch);
 
-    constructor () public {
+    constructor() public {
         _status = _NOT_SET;
     }
 
     function setMolochSummoner(address _molochSummoner) external {
         require(_status != _SET, "already set");
         molochSummoner = _molochSummoner;
-        _status = _SET; // locks MinionSummoner to MolochSummoner 
+        _status = _SET; // locks moloch and minion summoner contracts as set 
     }
 
     function summonMinion(address moloch, address _molochDepositToken) public {
