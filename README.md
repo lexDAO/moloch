@@ -7,6 +7,9 @@
 * **Summoning Circle** 🕯️🕯️🕯️
 > begin with group of Summoners to vote in other members / decide fair share split going fwd
 
+* **Summoning Sale** 💰⌛💰
+> Summoning Circle can buy into membership shares at set rate during sale period
+
 * **Embedded Minion** 🔥👺🔥
 > begin with pre-programmed Minion to execute external txs for member votes
 
@@ -14,14 +17,13 @@
 
 * most recent [OpenZeppelin contracts](https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/contracts)
 * housekeeping updates to remove warnings: [PR](https://github.com/MolochVentures/moloch/pull/86)
+* gas/size savings measures / etc.
 
 These upgrades also reflect a 'more modular Moloch' design, using dual-summoning addresses to expand codebase executing votes.
 
-***try things out:*** 🧙
+***try things out:*** 🧙 *2x BETA* / Summoning Circle Sale w/ Minion /
 
->[Mainnet Summoner](https://etherscan.io/address/0xC6A36b65ab6FBF7a8d2307251F1dE1A9a6Ed549d#code)
-
->[Rinkeby Summoner](https://rinkeby.etherscan.io/address/0x4d31e3c4571a0acFD2cCA5c4E274ceD4782d7B31#code)
+>[Rinkeby Summoner](https://rinkeby.etherscan.io/address/0x0cBCA3bFa95eC7D4ef55aFD80e8Fc6fBB642861c#code)
 
 STEAL THIS CODE
 
