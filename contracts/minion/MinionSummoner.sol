@@ -7,14 +7,14 @@ contract MinionSummoner {
     address public molochSummoner;
     address[] public minions;
     address[] public molochs;
-    bool private molochSummonerSet = false; // chains MinionSummoner to MolochSummoner after contracts set
+    bool private molochSummonerSet = false; // tracks lock of MinionSummoner to MolochSummoner 
 
     event Summoned(address indexed minion, address moloch);
     
     function setMolochSummoner(address _molochSummoner) public {
         require(molochSummonerSet == false, "molochSummoner already set");
         molochSummoner = _molochSummoner;
-        molochSummonerSet = true;
+        molochSummonerSet = true; // locks MinionSummoner to MolochSummoner
     }
 
     function summonMinion(address _moloch, address _molochApprovedToken) public {
