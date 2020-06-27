@@ -19,7 +19,7 @@ contract MinionSummoner {
     function setMolochSummoner(address _molochSummoner) external {
         require(_status != _SET, "already set");
         molochSummoner = _molochSummoner;
-        _status = _SET; // locks moloch and minion summoner contracts as set 
+        _status = _SET; // locks molochSummoner to this contract set
     }
 
     function summonMinion(address moloch, address _molochDepositToken) public {
