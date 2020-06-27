@@ -5,13 +5,13 @@
 ***2X UPGRADES INCLUDE:***
 
 * **Summoning Circle** 🕯️🕯️🕯️
-> begin with group of Summoners to vote in other members / decide fair share split going fwd
+> Summoning Circle array votes in other members / decide fair share split going fwd
 
 * **Summoning Sale** 💰⌛💰
 > Summoning Circle can buy into membership shares at set rate during sale period
 
-* **Embedded Minion** 🔥👺🔥
-> begin with pre-programmed Minion to execute external txs for member votes
+* **Minion Attaché** 🔥👺🔥
+> Moloch w/ attached Minion to execute external txs for member votes
 
 ***misc:***
 
