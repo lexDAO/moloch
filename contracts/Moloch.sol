@@ -186,13 +186,13 @@ contract Moloch is ReentrancyGuard {
         emit SetMinion(minion);
     }
     
-    function makeSummoningTribute(uint256 tribute) public onlyShareholder {
+    function makeSummoningTribute(uint256 tribute) public onlyMember {
         require(now < summoningTermination, "summoning terminated");
+        require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "tribute transfer failed");
         
-        IERC20(depositToken).transferFrom(msg.sender, address(this), tribute);
         unsafeAddToBalance(GUILD, depositToken, tribute);
         
-        uint256 shares = tribute.div(summoningRate).div(10**uint256(18));
+        uint256 shares = ((tribute) / (summoningRate))-1;
         members[msg.sender].shares += shares;
         totalShares += shares;
         
