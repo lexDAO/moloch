@@ -60,7 +60,7 @@ contract Moloch is ReentrancyGuard {
     address public constant GUILD = address(0xdead);
     address public constant ESCROW = address(0xbeef);
     address public constant TOTAL = address(0xbabe);
-    mapping (address => mapping(address => uint256)) public userTokenBalances; // userTokenBalances[userAddress][tokenAddress]
+    mapping(address => mapping(address => uint256)) public userTokenBalances; // userTokenBalances[userAddress][tokenAddress]
 
     enum Vote {
         Null, // default value, counted as abstention
