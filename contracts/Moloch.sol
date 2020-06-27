@@ -188,7 +188,7 @@ contract Moloch is ReentrancyGuard {
     
     function makeSummoningTribute(uint256 tribute) public onlyMember {
         require(now < summoningTermination, "summoning terminated");
-        require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "tribute transfer failed");
+        require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "tribute failed");
         
         unsafeAddToBalance(GUILD, depositToken, tribute);
         
