@@ -51,7 +51,7 @@ contract Moloch is ReentrancyGuard {
     event CancelProposal(uint256 indexed proposalId, address applicantAddress);
     event UpdateDelegateKey(address indexed memberAddress, address newDelegateKey);
     event Withdraw(address indexed memberAddress, address token, uint256 amount);
-    event AmendGovernance(address indexed depositToken, address indexed minion, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 proposalDeposit, uint256 dilutionBound, uint256 processingReward, bytes32 manifesto);
+    event AmendGovernance(address indexed depositToken, address indexed minion, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 proposalDeposit, uint256 dilutionBound, uint256 processingReward, uint256 summoningRate, uint256 summoningTermination, bytes32 manifesto);
 
     // *******************
     // INTERNAL ACCOUNTING
@@ -211,13 +211,14 @@ contract Moloch is ReentrancyGuard {
         uint256 _proposalDeposit, 
         uint256 _dilutionBound, 
         uint256 _processingReward,
+        uint256 _summoningRate,
+        uint256 _summoningTermination,
         bytes32 _manifesto
     ) public {
         require(msg.sender == minion, "not minion");
         require(_votingPeriodLength <= MAX_VOTING_PERIOD_LENGTH, "_votingPeriodLength maxed");
         require(_gracePeriodLength <= MAX_GRACE_PERIOD_LENGTH, "_gracePeriodLength maxed");
         require(_dilutionBound <= MAX_DILUTION_BOUND, "_dilutionBound maxed");
-        require(_proposalDeposit >= _processingReward, "_proposalDeposit < _processingReward");
         
         depositToken = _depositToken;
         minion = _minion;
@@ -227,9 +228,11 @@ contract Moloch is ReentrancyGuard {
         proposalDeposit = _proposalDeposit;
         dilutionBound = _dilutionBound;
         processingReward = _processingReward;
+        summoningRate = _summoningRate;
+        summoningTermination = _summoningTermination;
         manifesto = _manifesto;
         
-        emit AmendGovernance(depositToken, minion, periodDuration, votingPeriodLength, gracePeriodLength, proposalDeposit, dilutionBound, processingReward, manifesto);
+        emit AmendGovernance(depositToken, minion, periodDuration, votingPeriodLength, gracePeriodLength, proposalDeposit, dilutionBound, processingReward, summoningRate, summoningTermination, manifesto);
     }
 
     /*****************
