@@ -5,7 +5,7 @@
 ***2X UPGRADES INCLUDE:***
 
 * **Summoning Circle** 🔥 👹 🔥
-> Summoning Circle /array/ votes in other members / decides fair shares going fwd
+> Summoning Circle / [array] / votes in other members / decides fair shares going fwd
 
 * **Summoning Sale** 💰 ⌛ 💰
 > Summoning Circle can buy into member shares at summoned rate during sale period
