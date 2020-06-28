@@ -23,7 +23,7 @@ These upgrades also reflect a 'more modular Moloch' design, using dual-summoning
 
 ***try things out:*** 🧙 *2x BETA* / Summoning Circle Sale w/ Minion /
 
->[Rinkeby Summoner](https://rinkeby.etherscan.io/address/0x7653C5A910b334074Bb048a31E11eBA657B253c9#code)
+>[Rinkeby Summoner](https://rinkeby.etherscan.io/address/0xbCD822E2Dd83f04d5d39713a294A9086fB476eE2#code)
 
 STEAL THIS CODE
 
