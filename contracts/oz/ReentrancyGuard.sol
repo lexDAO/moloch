@@ -11,16 +11,12 @@ contract ReentrancyGuard {
     }
 
     modifier nonReentrant() {
-        // On the first call to nonReentrant, _notEntered will be true
         require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
 
-        // Any calls to nonReentrant after this point will fail
         _status = _ENTERED;
 
         _;
 
-        // By storing the original value once again, a refund is triggered (see
-        // https://eips.ethereum.org/EIPS/eip-2200)
         _status = _NOT_ENTERED;
     }
 }
