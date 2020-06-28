@@ -185,7 +185,7 @@ contract Moloch is ReentrancyGuard {
     function setMinion(address _minion) nonReentrant external {
         require(status != SET, "already set");
         minion = _minion;
-        status = SET; // sets minion for contract set on summoning
+        status = SET; // sets minion for moloch contract set on summoning
         emit SetMinion(minion);
     }
     
