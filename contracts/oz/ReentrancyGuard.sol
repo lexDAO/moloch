@@ -11,7 +11,7 @@ contract ReentrancyGuard {
     }
 
     modifier nonReentrant() {
-        require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
+        require(_status != _ENTERED, "reentrant call");
 
         _status = _ENTERED;
         _;
