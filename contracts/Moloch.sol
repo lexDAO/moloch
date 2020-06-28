@@ -53,12 +53,12 @@ contract Moloch is ReentrancyGuard {
     // INTERNAL ACCOUNTING
     // *******************
     uint256 private status;
-    uint256 private constant NOT_SET = 0;
-    uint256 private constant SET = 1; // tracks contract summoning set
-    uint256 public proposalCount = 0; // total proposals submitted
-    uint256 public totalShares = 0; // total shares across all members
-    uint256 public totalLoot = 0; // total loot across all members
-    uint256 public totalGuildBankTokens = 0; // total tokens with non-zero balance in guild bank
+    uint256 private NOT_SET;
+    uint256 private SET; // tracks contract summoning set
+    uint256 public proposalCount; // total proposals submitted
+    uint256 public totalShares; // total shares across all members
+    uint256 public totalLoot; // total loot across all members
+    uint256 public totalGuildBankTokens; // total tokens with non-zero balance in guild bank
 
     address public constant GUILD = address(0xdead);
     address public constant ESCROW = address(0xbeef);
