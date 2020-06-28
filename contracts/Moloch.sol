@@ -1,3 +1,5 @@
+pragma solidity 0.5.17;
+
 contract Moloch is ReentrancyGuard {
     using SafeMath for uint256;
 
