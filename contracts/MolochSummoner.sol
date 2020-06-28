@@ -7,7 +7,7 @@ contract MolochSummoner {
     Moloch private moloch;
     ISummonMinion public minionSummoner;
 
-    constructor(address _minionSummoner) public { // locks minionSummoner to this contract set
+    constructor(address _minionSummoner) public { // locks minionSummoner to contract set
         minionSummoner = ISummonMinion(_minionSummoner);
         minionSummoner.setMolochSummoner(address(this));
     }
@@ -23,8 +23,8 @@ contract MolochSummoner {
         uint256 _processingReward,
         uint256 _summoningRate,
         uint256 _summoningTermination,
-        bytes32 _manifesto) 
-    public {
+        bytes32 _manifesto
+    ) public {
         moloch = new Moloch(
             _summoners,
             _approvedTokens,
