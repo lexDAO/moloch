@@ -58,7 +58,7 @@ contract Moloch is ReentrancyGuard {
     // *******************
     uint256 private status;
     uint256 private NOT_SET;
-    uint256 private SET; // tracks contract summoning set
+    uint256 private SET = 1; // tracks contract summoning set
     uint256 public proposalCount; // total proposals submitted
     uint256 public totalShares; // total shares across all members
     uint256 public totalLoot; // total loot across all members
