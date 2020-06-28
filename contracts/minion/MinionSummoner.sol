@@ -7,7 +7,7 @@ contract MinionSummoner {
     address[] public molochs; // tracks summoned molochs for set
     address public molochSummoner;
     uint256 private status;
-    uint256 private constant NOT_SET;
+    uint256 private NOT_SET;
     uint256 private constant SET = 1;
     
     event Summoned(address indexed minion, address indexed moloch);
