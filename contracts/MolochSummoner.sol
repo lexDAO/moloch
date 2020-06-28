@@ -23,8 +23,8 @@ contract MolochSummoner {
         uint256 _processingReward,
         uint256 _summoningRate,
         uint256 _summoningTermination,
-        bytes32 _manifesto) public {
-
+        bytes32 _manifesto) 
+    public {
         moloch = new Moloch(
             _summoners,
             _approvedTokens,
