@@ -11,7 +11,7 @@
 > Summoning Circle can buy votes at `summoningRate` w/ `depositToken` tribute before `summoningTermination` epoch time
 
 * **Minion Attaché** 🕯️ 👺 🕯️
-> `Moloch` w/ `Minion` summoned to execute external txs for member votes
+> `Moloch` w/ `Minion` summoned that allows execution of arbitrary calls voted on by members 
 
 * **Adjustable Governance** 📻 📜 📻
 > `Minion` preset to adjust governance paramaters, voting settings, summon new sales
