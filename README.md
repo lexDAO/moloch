@@ -14,7 +14,7 @@
 > `Moloch` w/ `Minion` summoned that allows execution of arbitrary calls voted on by members 
 
 * **Adjustable Governance** 📻 📜 📻
-> `Minion` preset to adjust governance paramaters, voting settings, summon new sales
+> `Minion` preset to adjust governance params, voting settings, summon new sales
 
 ***misc:***
 
