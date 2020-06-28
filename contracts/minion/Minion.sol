@@ -4,7 +4,7 @@ import "./IMoloch.sol";
 
 contract Minion {
     IMoloch public moloch;
-    address public molochDepositToken;
+    address private molochDepositToken;
     string public constant MINION_ACTION_DETAILS = '{"isMinion": true, "title":"MINION", "description":"';
     mapping(uint256 => Action) public actions; // proposalId => Action
 
