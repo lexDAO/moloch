@@ -38,7 +38,7 @@ contract Minion {
     ) public returns (uint256) {
         // No calls to zero address allows us to check that minion submitted
         // the proposal without getting the proposal struct from the moloch
-        require(_actionTo != address(0), "Minion::invalid _actionTo");
+        require(_actionTo != address(0), "invalid _actionTo");
 
         bytes32 details = keccak256(abi.encodePacked(MINION_ACTION_DETAILS, _description, '"}'));
 
@@ -72,17 +72,17 @@ contract Minion {
         bool[6] memory flags = moloch.getProposalFlags(_proposalId);
 
         // minion did not submit this proposal
-        require(action.to != address(0), "Minion::invalid _proposalId");
+        require(action.to != address(0), "invalid _proposalId");
         // can't call arbitrary functions on parent moloch
-        require(action.to != address(moloch), "Minion::invalid target");
-        require(!action.executed, "Minion::action executed");
-        require(address(this).balance >= action.value, "Minion::insufficient eth");
-        require(flags[2], "Minion::proposal not passed");
+        require(action.to != address(moloch), "invalid target");
+        require(!action.executed, "action executed");
+        require(address(this).balance >= action.value, "insufficient eth");
+        require(flags[2], "proposal not passed");
 
         // execute call
         actions[_proposalId].executed = true;
         (bool success, bytes memory retData) = action.to.call.value(action.value)(action.data);
-        require(success, "Minion::call failure");
+        require(success, "call failure");
         emit ActionExecuted(_proposalId, msg.sender);
         return retData;
     }
