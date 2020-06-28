@@ -58,7 +58,7 @@ contract Moloch is ReentrancyGuard {
     // *******************
     uint256 private status;
     uint256 private NOT_SET;
-    uint256 private SET = 1; // tracks contract summoning set
+    uint256 private constant SET = 1; // tracks contract summoning set
     uint256 public proposalCount; // total proposals submitted
     uint256 public totalShares; // total shares across all members
     uint256 public totalLoot; // total loot across all members
@@ -117,17 +117,17 @@ contract Moloch is ReentrancyGuard {
     uint256[] public proposalQueue;
 
     modifier onlyMember {
-        require(members[msg.sender].shares > 0 || members[msg.sender].loot > 0, "not a member");
+        require(members[msg.sender].shares > 0 || members[msg.sender].loot > 0, "not member");
         _;
     }
 
     modifier onlyShareholder {
-        require(members[msg.sender].shares > 0, "not a shareholder");
+        require(members[msg.sender].shares > 0, "not shareholder");
         _;
     }
 
     modifier onlyDelegate {
-        require(members[memberAddressByDelegateKey[msg.sender]].shares > 0, "not a delegate");
+        require(members[memberAddressByDelegateKey[msg.sender]].shares > 0, "not delegate");
         _;
     }
     
@@ -581,10 +581,10 @@ contract Moloch is ReentrancyGuard {
     }
 
     function _validateProposalForProcessing(uint256 proposalIndex) internal view {
-        require(proposalIndex < proposalQueue.length, "proposal does not exist");
+        require(proposalIndex < proposalQueue.length, "no such proposal");
         Proposal memory proposal = proposals[proposalQueue[proposalIndex]];
 
-        require(getCurrentPeriod() >= proposal.startingPeriod.add(votingPeriodLength).add(gracePeriodLength), "proposal not process ready");
+        require(getCurrentPeriod() >= proposal.startingPeriod.add(votingPeriodLength).add(gracePeriodLength), "proposal not ready");
         require(proposal.flags[1] == false, "proposal has already been processed");
         require(proposalIndex == 0 || proposals[proposalQueue[proposalIndex.sub(1)]].flags[1], "previous proposal unprocessed");
     }
@@ -644,7 +644,7 @@ contract Moloch is ReentrancyGuard {
     }
 
     function withdrawBalances(address[] memory tokens, uint256[] memory amounts, bool max) public nonReentrant {
-        require(tokens.length == amounts.length, "tokens + amounts arrays must match lengths");
+        require(tokens.length == amounts.length, "tokens + amounts arrays must match");
 
         for (uint256 i=0; i < tokens.length; i++) {
             uint256 withdrawAmount = amounts[i];
@@ -668,7 +668,7 @@ contract Moloch is ReentrancyGuard {
         // only collect if 1) there are tokens to collect 2) token is whitelisted 3) token has non-zero balance
         require(amountToCollect > 0, "no tokens");
         require(tokenWhitelist[token], "not whitelisted");
-        require(userTokenBalances[GUILD][token] > 0, "token must have guild balance");
+        require(userTokenBalances[GUILD][token] > 0, "no guild balance");
         
         unsafeAddToBalance(GUILD, token, amountToCollect);
         emit TokensCollected(token, amountToCollect);
@@ -693,7 +693,7 @@ contract Moloch is ReentrancyGuard {
         // skip checks if member is setting the delegate key to their member address
         if (newDelegateKey != msg.sender) {
             require(!members[newDelegateKey].exists, "cannot overwrite existing members");
-            require(!members[memberAddressByDelegateKey[newDelegateKey]].exists, "cannot overwrite existing delegate keys");
+            require(!members[memberAddressByDelegateKey[newDelegateKey]].exists, "cannot overwrite delegate keys");
         }
 
         Member storage member = members[msg.sender];
@@ -706,7 +706,7 @@ contract Moloch is ReentrancyGuard {
 
     // can only ragequit if the latest proposal you voted YES on has been processed
     function canRagequit(uint256 highestIndexYesVote) public view returns (bool) {
-        require(highestIndexYesVote < proposalQueue.length, "proposal does not exist");
+        require(highestIndexYesVote < proposalQueue.length, "no such proposal");
         return proposals[proposalQueue[highestIndexYesVote]].flags[1];
     }
 
