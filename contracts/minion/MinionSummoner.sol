@@ -6,20 +6,20 @@ contract MinionSummoner {
     Minion private minion;
     address[] public molochs; // tracks summoned molochs for set
     address public molochSummoner;
-    uint256 private _status;
-    uint256 private constant _NOT_SET = 0;
-    uint256 private constant _SET = 1;
+    uint256 private status;
+    uint256 private constant NOT_SET = 0;
+    uint256 private constant SET = 1;
     
     event Summoned(address indexed minion, address indexed moloch);
 
     constructor() public {
-        _status = _NOT_SET;
+        status = NOT_SET;
     }
 
     function setMolochSummoner(address _molochSummoner) external {
-        require(_status != _SET, "already set");
+        require(status != SET, "already set");
         molochSummoner = _molochSummoner;
-        _status = _SET; // locks molochSummoner to this contract set
+        status = SET; // locks molochSummoner to this contract set
     }
 
     function summonMinion(address moloch, address _molochDepositToken) public {
