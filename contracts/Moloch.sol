@@ -1,9 +1,3 @@
-pragma solidity 0.5.17;
-
-import "./oz/SafeMath.sol";
-import "./oz/IERC20.sol";
-import "./oz/ReentrancyGuard.sol";
-
 contract Moloch is ReentrancyGuard {
     using SafeMath for uint256;
 
@@ -37,11 +31,11 @@ contract Moloch is ReentrancyGuard {
     // ***************
     // EVENTS
     // ***************
-    event SummonComplete(address[] indexed summoners, address[] tokens, uint256 summoningTime, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 proposalDeposit, uint256 dilutionBound, uint256 processingReward, uint256 summoningRate, uint256 summoningTermination, bytes32 manifesto);
     event SetMinion(address indexed minion);
+    event SummonComplete(address[] indexed summoners, address[] tokens, uint256 summoningTime, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 proposalDeposit, uint256 dilutionBound, uint256 processingReward, uint256 summoningRate, uint256 summoningTermination, bytes32 manifesto);
     event MakeSummoningTribute(address indexed memberAddress, uint256 indexed tribute, uint256 indexed shares);
     event AmendGovernance(address indexed depositToken, address indexed minion, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 proposalDeposit, uint256 dilutionBound, uint256 processingReward, uint256 summoningRate, uint256 summoningTermination, bytes32 manifesto);
-    event SubmitProposal(address indexed applicant, uint256 sharesRequested, uint256 lootRequested, uint256 tributeOffered, address tributeToken, uint256 paymentRequested, address paymentToken, string details, bool[6] flags, uint256 proposalId, address indexed delegateKey, address indexed memberAddress);
+    event SubmitProposal(address indexed applicant, uint256 sharesRequested, uint256 lootRequested, uint256 tributeOffered, address tributeToken, uint256 paymentRequested, address paymentToken, bytes32 details, bool[6] flags, uint256 proposalId, address indexed delegateKey, address indexed memberAddress);
     event SponsorProposal(address indexed delegateKey, address indexed memberAddress, uint256 proposalId, uint256 proposalIndex, uint256 startingPeriod);
     event SubmitVote(uint256 proposalId, uint256 indexed proposalIndex, address indexed delegateKey, address indexed memberAddress, uint8 uintVote);
     event ProcessProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, bool didPass);
@@ -56,6 +50,9 @@ contract Moloch is ReentrancyGuard {
     // *******************
     // INTERNAL ACCOUNTING
     // *******************
+    uint256 private status;
+    uint256 private constant NOT_SET = 0;
+    uint256 private constant SET = 1; // tracks contract summoning set
     uint256 public proposalCount = 0; // total proposals submitted
     uint256 public totalShares = 0; // total shares across all members
     uint256 public totalLoot = 0; // total loot across all members
@@ -64,7 +61,6 @@ contract Moloch is ReentrancyGuard {
     address public constant GUILD = address(0xdead);
     address public constant ESCROW = address(0xbeef);
     address public constant TOTAL = address(0xbabe);
-    bool private minionSet = false;
     mapping(address => mapping(address => uint256)) public userTokenBalances; // userTokenBalances[userAddress][tokenAddress]
 
     enum Vote {
@@ -96,7 +92,7 @@ contract Moloch is ReentrancyGuard {
         uint256 yesVotes; // the total number of YES votes for this proposal
         uint256 noVotes; // the total number of NO votes for this proposal
         bool[6] flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick]
-        string details; // proposal details - could be IPFS hash, plaintext, or JSON
+        bytes32 details; // proposal details to add context for members 
         uint256 maxTotalSharesAndLootAtYesVote; // the maximum # of total shares encountered at a yes vote on this proposal
         mapping(address => Vote) votesByMember; // the votes on this proposal by each member
     }
@@ -172,6 +168,7 @@ contract Moloch is ReentrancyGuard {
         proposalDeposit = _proposalDeposit;
         dilutionBound = _dilutionBound;
         processingReward = _processingReward;
+        status = NOT_SET;
         summoningRate = _summoningRate;
         summoningTermination = _summoningTermination;
         summoningTime = now;
@@ -179,29 +176,30 @@ contract Moloch is ReentrancyGuard {
         manifesto = _manifesto;
     }
     
-    function setMinion(address payable _minion) public {
-        require(minionSet == false, "already set");
+    function setMinion(address _minion) nonReentrant external {
+        require(status != SET, "already set");
         minion = _minion;
-        minionSet = true; // sets minion for contract set on summoning
+        status = SET; // sets minion for contract set on summoning
         emit SetMinion(minion);
     }
     
-    function makeSummoningTribute(uint256 tribute) public onlyMember {
+    function makeSummoningTribute(uint256 tribute) public nonReentrant onlyMember {
         require(now < summoningTermination, "summoning terminated");
         require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "tribute failed");
         
         unsafeAddToBalance(GUILD, depositToken, tribute);
         
-        uint256 shares = ((tribute) / (summoningRate))-1;
+        uint256 shares = ((tribute) / (summoningRate)) - 1;
         members[msg.sender].shares += shares;
+        require(totalShares + shares <= MAX_NUMBER_OF_SHARES_AND_LOOT, "shares maxed"); 
         totalShares += shares;
         
         emit MakeSummoningTribute(msg.sender, tribute, shares);
     }
     
-    /**********
-    MINION MGMT
-    **********/
+    /****************
+    MINION GOVERNANCE
+    ****************/
     function amendGovernance(
         address _depositToken,
         address _minion,
@@ -214,7 +212,7 @@ contract Moloch is ReentrancyGuard {
         uint256 _summoningRate,
         uint256 _summoningTermination,
         bytes32 _manifesto
-    ) public {
+    ) public nonReentrant {
         require(msg.sender == minion, "not minion");
         require(_votingPeriodLength <= MAX_VOTING_PERIOD_LENGTH, "_votingPeriodLength maxed");
         require(_gracePeriodLength <= MAX_GRACE_PERIOD_LENGTH, "_gracePeriodLength maxed");
@@ -246,7 +244,7 @@ contract Moloch is ReentrancyGuard {
         address tributeToken,
         uint256 paymentRequested,
         address paymentToken,
-        string memory details
+        bytes32 details
     ) public nonReentrant returns (uint256 proposalId) {
         require(sharesRequested.add(lootRequested) <= MAX_NUMBER_OF_SHARES_AND_LOOT, "shares maxed");
         require(tokenWhitelist[tributeToken], "tributeToken not whitelisted");
@@ -269,7 +267,7 @@ contract Moloch is ReentrancyGuard {
         return proposalCount - 1; // return proposalId - contracts calling submit might want it
     }
 
-    function submitWhitelistProposal(address tokenToWhitelist, string memory details) public nonReentrant returns (uint256 proposalId) {
+    function submitWhitelistProposal(address tokenToWhitelist, bytes32 details) public nonReentrant returns (uint256 proposalId) {
         require(tokenToWhitelist != address(0), "need token");
         require(!tokenWhitelist[tokenToWhitelist], "already whitelisted");
         require(approvedTokens.length < MAX_TOKEN_WHITELIST_COUNT, "whitelist maxed");
@@ -281,7 +279,7 @@ contract Moloch is ReentrancyGuard {
         return proposalCount - 1;
     }
 
-    function submitGuildKickProposal(address memberToKick, string memory details) public nonReentrant returns (uint256 proposalId) {
+    function submitGuildKickProposal(address memberToKick, bytes32 details) public nonReentrant returns (uint256 proposalId) {
         Member memory member = members[memberToKick];
 
         require(member.shares > 0 || member.loot > 0, "must have share or loot");
@@ -302,7 +300,7 @@ contract Moloch is ReentrancyGuard {
         address tributeToken,
         uint256 paymentRequested,
         address paymentToken,
-        string memory details,
+        bytes32 details,
         bool[6] memory flags
     ) internal {
         Proposal memory proposal = Proposal({
