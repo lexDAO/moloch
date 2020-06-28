@@ -18,7 +18,7 @@
 
 ***misc:***
 
-* most recent [OpenZeppelin contracts](https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/contracts)
+* most recent [OpenZeppelin contracts](https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/contracts) w/ trimmed comments / error msgs.
 * housekeeping updates to remove warnings: [PR](https://github.com/MolochVentures/moloch/pull/86)
 * gas/size savings measures / etc.
 
@@ -26,7 +26,7 @@ These upgrades also reflect a 'more modular Moloch' design, using dual-summoning
 
 ***try things out:*** 🧙 *2x BETA* / Summoning Circle Sale w/ Minion /
 
->[Rinkeby Summoner](https://rinkeby.etherscan.io/address/0x1d63828853e24c2385Bf272bEB548D921D94DDB3#code)
+>[Rinkeby Summoner](https://rinkeby.etherscan.io/address/0xba370a2909628b9Cd8D8607a654898B1ECaB64BF#code)
 
 STEAL THIS CODE
 
