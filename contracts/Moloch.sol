@@ -154,7 +154,7 @@ contract Moloch is ReentrancyGuard {
         require(_dilutionBound <= MAX_DILUTION_BOUND, "_dilutionBound maxed");
         require(_approvedTokens.length > 0, "need token");
         require(_approvedTokens.length <= MAX_TOKEN_WHITELIST_COUNT, "tokens maxed");
-        require(_proposalDeposit >= _processingReward, "_proposalDeposit cannot be smaller than _processingReward");
+        require(_proposalDeposit >= _processingReward, "_proposalDeposit < _processingReward");
         
         depositToken = _approvedTokens[0];
         // NOTE: move event up here, avoid stack too deep if too many approved tokens
@@ -232,7 +232,7 @@ contract Moloch is ReentrancyGuard {
         require(_gracePeriodLength <= MAX_GRACE_PERIOD_LENGTH, "_gracePeriodLength maxed");
         require(_dilutionBound > 0, "_dilutionBound zeroed");
         require(_dilutionBound <= MAX_DILUTION_BOUND, "_dilutionBound maxed");
-        require(_proposalDeposit >= _processingReward, "_proposalDeposit cannot be smaller than _processingReward");
+        require(_proposalDeposit >= _processingReward, "_proposalDeposit < _processingReward");
         
         depositToken = _depositToken;
         minion = _minion;
