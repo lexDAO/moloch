@@ -37,7 +37,6 @@ contract Moloch is ReentrancyGuard {
     // ***************
     // EVENTS
     // ***************
-    event SetMinion(address indexed minion);
     event SummonComplete(address[] indexed summoners, address[] tokens, uint256 summoningTime, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 proposalDeposit, uint256 dilutionBound, uint256 processingReward, uint256 summoningRate, uint256 summoningTermination, bytes32 manifesto);
     event MakeSummoningTribute(address indexed memberAddress, uint256 indexed tribute, uint256 indexed shares);
     event AmendGovernance(address indexed depositToken, address indexed minion, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 proposalDeposit, uint256 dilutionBound, uint256 processingReward, uint256 summoningRate, uint256 summoningTermination, bytes32 manifesto);
@@ -186,7 +185,6 @@ contract Moloch is ReentrancyGuard {
         require(status != SET, "already set");
         minion = _minion;
         status = SET; // locks minion for moloch contract set on summoning
-        emit SetMinion(minion);
     }
     
     function makeSummoningTribute(uint256 tribute) public nonReentrant onlyMember {
