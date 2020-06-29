@@ -16,13 +16,13 @@ contract Moloch is ReentrancyGuard {
     uint256 public proposalDeposit; // default = 10 ETH (~$1,000 worth of ETH at contract deployment)
     uint256 public dilutionBound; // default = 3 - maximum multiplier a YES voter will be obligated to pay in case of mass ragequit
     uint256 public processingReward; // default = 0.1 - amount of ETH to give to whoever processes a proposal
-    uint256 public summoningRate; // rate to convert into shares during summoning tribute time
-    uint256 public summoningTermination; // termination time for summoning tribute
+    uint256 public summoningRate; // rate to convert into shares during summoning tribute time (default = 10000000000000000000 wei amt. // 100 wETH => 10 shares)
+    uint256 public summoningTermination; // termination time for summoning tribute (can be restarted via governance param adjustments)
     uint256 public summoningTime; // needed to determine the current period
 
     address public depositToken; // deposit token contract reference; default = wETH
-    address public minion; // contract that allows execution of arbitrary calls voted on by members 
-    bytes32 public manifesto; // public manifesto data 
+    address public minion; // contract that allows execution of arbitrary calls voted on by members // gov. param adjustments
+    bytes32 public manifesto; // public manifesto data (e.g., company charter, operating agreement, credo, manifesto terms)
 
     // HARD-CODED LIMITS
     // These numbers are quite arbitrary; they are small enough to avoid overflows when doing calculations
@@ -174,18 +174,19 @@ contract Moloch is ReentrancyGuard {
         proposalDeposit = _proposalDeposit;
         dilutionBound = _dilutionBound;
         processingReward = _processingReward;
-        status = NOT_SET;
         summoningRate = _summoningRate;
         summoningTermination = _summoningTermination;
         summoningTime = now;
         totalShares = _summoners.length;
         manifesto = _manifesto;
+        
+        status = NOT_SET;
     }
     
-    function setMinion(address _minion) nonReentrant external {
+    function setMinion(address _minion) external nonReentrant {
         require(status != SET, "already set");
         minion = _minion;
-        status = SET; // sets minion for moloch contract set on summoning
+        status = SET; // locks minion for moloch contract set on summoning
         emit SetMinion(minion);
     }
     
