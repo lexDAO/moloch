@@ -179,7 +179,6 @@ contract Moloch is ReentrancyGuard {
         summoningTime = now;
         totalShares = _summoners.length;
         manifesto = _manifesto;
-        
         status = NOT_SET;
     }
     
