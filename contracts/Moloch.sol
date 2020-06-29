@@ -197,7 +197,7 @@ contract Moloch is ReentrancyGuard {
         
         unsafeAddToBalance(GUILD, depositToken, tribute);
         
-        uint256 shares = ((tribute) / (summoningRate));
+        uint256 shares = tribute / summoningRate;
         members[msg.sender].shares += shares;
         require(totalShares + shares <= MAX_NUMBER_OF_SHARES_AND_LOOT, "shares maxed"); 
         totalShares += shares;
