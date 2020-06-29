@@ -22,7 +22,7 @@ contract Moloch is ReentrancyGuard {
 
     address public depositToken; // deposit token contract reference; default = wETH
     address public minion; // contract that allows execution of arbitrary calls voted on by members // gov. param adjustments
-    bytes32 public manifesto; // public manifesto data (e.g., company charter, operating agreement, credo, manifesto terms)
+    bytes32 public manifesto; // public manifesto data (e.g., credo, company charter, operating agreement, membership terms)
 
     // HARD-CODED LIMITS
     // These numbers are quite arbitrary; they are small enough to avoid overflows when doing calculations
