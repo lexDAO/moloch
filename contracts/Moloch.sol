@@ -1,9 +1,3 @@
-pragma solidity 0.5.17;
-
-import "./oz/SafeMath.sol";
-import "./oz/IERC20.sol";
-import "./oz/ReentrancyGuard.sol";
-
 contract Moloch is ReentrancyGuard {
     using SafeMath for uint256;
 
@@ -146,11 +140,15 @@ contract Moloch is ReentrancyGuard {
         uint256 _summoningTermination,
         bytes32 _manifesto
     ) public {
+        require(_periodDuration > 0, "_periodDuration zeroed");
+        require(_votingPeriodLength > 0, "_votingPeriodLength zeroed");
         require(_votingPeriodLength <= MAX_VOTING_PERIOD_LENGTH, "_votingPeriodLength maxed");
         require(_gracePeriodLength <= MAX_GRACE_PERIOD_LENGTH, "_gracePeriodLength maxed");
+        require(_dilutionBound > 0, "_dilutionBound zeroed");
         require(_dilutionBound <= MAX_DILUTION_BOUND, "_dilutionBound maxed");
         require(_approvedTokens.length > 0, "need token");
         require(_approvedTokens.length <= MAX_TOKEN_WHITELIST_COUNT, "tokens maxed");
+        require(_proposalDeposit >= _processingReward, "_proposalDeposit cannot be smaller than _processingReward");
         
         depositToken = _approvedTokens[0];
         // NOTE: move event up here, avoid stack too deep if too many approved tokens
@@ -222,9 +220,13 @@ contract Moloch is ReentrancyGuard {
         bytes32 _manifesto
     ) public nonReentrant {
         require(msg.sender == minion, "not minion");
+        require(_periodDuration > 0, "_periodDuration zeroed");
+        require(_votingPeriodLength > 0, "_votingPeriodLength zeroed");
         require(_votingPeriodLength <= MAX_VOTING_PERIOD_LENGTH, "_votingPeriodLength maxed");
         require(_gracePeriodLength <= MAX_GRACE_PERIOD_LENGTH, "_gracePeriodLength maxed");
+        require(_dilutionBound > 0, "_dilutionBound zeroed");
         require(_dilutionBound <= MAX_DILUTION_BOUND, "_dilutionBound maxed");
+        require(_proposalDeposit >= _processingReward, "_proposalDeposit cannot be smaller than _processingReward");
         
         depositToken = _depositToken;
         minion = _minion;
