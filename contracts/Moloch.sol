@@ -16,7 +16,7 @@ contract Moloch is ReentrancyGuard {
     uint256 public proposalDeposit; // default = 10 ETH (~$1,000 worth of ETH at contract deployment)
     uint256 public dilutionBound; // default = 3 - maximum multiplier a YES voter will be obligated to pay in case of mass ragequit
     uint256 public processingReward; // default = 0.1 - amount of ETH to give to whoever processes a proposal
-    uint256 public summoningRate; // rate to convert into shares during summoning tribute time (default = 10000000000000000000 wei amt. // 100 wETH => 10 shares)
+    uint256 public summoningRate; // rate to convert into shares during summoning time (default = 10000000000000000000 wei amt. // 100 wETH => 10 shares)
     uint256 public summoningTermination; // termination time for summoning tribute (can be restarted via governance param adjustments)
     uint256 public summoningTime; // needed to determine the current period
 
