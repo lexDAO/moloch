@@ -161,7 +161,7 @@ contract Moloch is ReentrancyGuard {
         emit SummonComplete(_summoners, _approvedTokens, now, _periodDuration, _votingPeriodLength, _gracePeriodLength, _proposalDeposit, _dilutionBound, _processingReward, _summoningRate, _summoningTermination, _manifesto);
         
         for (uint256 i = 0; i < _summoners.length; i++) {
-            members[_summoners[i]] = Member(_summoners[i], 1, 0, true, 0, 0);
+            members[_summoners[i]] = Member(_summoners[i], 0, 0, true, 0, 0);
             memberAddressByDelegateKey[_summoners[i]] = _summoners[i];
         }
 
@@ -180,7 +180,6 @@ contract Moloch is ReentrancyGuard {
         summoningRate = _summoningRate;
         summoningTermination = _summoningTermination;
         summoningTime = now;
-        totalShares = _summoners.length;
         manifesto = _manifesto;
         status = NOT_SET;
     }
@@ -191,7 +190,8 @@ contract Moloch is ReentrancyGuard {
         status = SET; // locks minion for moloch contract set on summoning
     }
     
-    function makeSummoningTribute(uint256 tribute) public nonReentrant onlyMember {
+    function makeSummoningTribute(uint256 tribute) public nonReentrant {
+        require(members[msg.sender].exists == true, "not member");
         require(now < summoningTermination, "summoning terminated");
         require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "tribute failed");
         
