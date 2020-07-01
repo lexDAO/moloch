@@ -5,7 +5,7 @@ import "./IMoloch.sol";
 contract Minion {
     IMoloch public moloch;
     address private molochDepositToken;
-    bytes32 public constant MINION_ACTION_DETAILS = 0x7b69734d696e696f6e3a20747275652c207469746c653a4d494e494f4e2c2064;
+    string public constant MINION_ACTION_DETAILS = '{"isMinion": true, "title":"MINION", "description":"';
     mapping(uint256 => Action) public actions; // proposalId => Action
 
     struct Action {
