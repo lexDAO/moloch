@@ -5,9 +5,9 @@ import "./Minion.sol";
 contract MinionSummoner {
     Minion private minion;
     address public molochSummoner;
-    uint256 private status;
-    uint256 private NOT_SET;
-    uint256 private constant SET = 1;
+    uint8 private status;
+    uint8 private NOT_SET;
+    uint8 private constant SET = 1;
     
     event SummonMinion(address indexed minion);
 
