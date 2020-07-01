@@ -7,7 +7,7 @@ contract MolochSummoner {
     Moloch private moloch;
     ISummonMinion public minionSummoner;
     
-    event Summoned(address indexed moloch);
+    event SummonMoloch(address indexed moloch);
 
     constructor(address _minionSummoner) public { // locks minionSummoner to contract set
         minionSummoner = ISummonMinion(_minionSummoner);
@@ -41,6 +41,6 @@ contract MolochSummoner {
             _manifesto);
         
         minionSummoner.summonMinion(address(moloch), _approvedTokens[0]); // summons minion for new moloch
-        emit Summoned(address(moloch));
+        emit SummonMoloch(address(moloch));
     }
 }
