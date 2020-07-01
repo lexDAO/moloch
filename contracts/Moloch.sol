@@ -29,6 +29,7 @@ contract Moloch is ReentrancyGuard {
     // with periods or shares, yet big enough to not limit reasonable use cases.
     uint256 constant MAX_VOTING_PERIOD_LENGTH = 10**18; // maximum length of voting period
     uint256 constant MAX_GRACE_PERIOD_LENGTH = 10**18; // maximum length of grace period
+    uint256 constant MAX_SUMMON_PERIOD_LENGTH = 10**18; // maximum length of grace period
     uint256 constant MAX_DILUTION_BOUND = 10**18; // maximum dilution bound
     uint256 constant MAX_NUMBER_OF_SHARES_AND_LOOT = 10**18; // maximum number of shares that can be minted
     uint256 constant MAX_TOKEN_WHITELIST_COUNT = 400; // maximum number of whitelisted tokens
@@ -56,8 +57,8 @@ contract Moloch is ReentrancyGuard {
     // INTERNAL ACCOUNTING
     // *******************
     uint256 private status;
-    uint256 private NOT_SET;
-    uint256 private constant SET = 1; // tracks contract summoning set
+    uint8 private NOT_SET;
+    uint8 private constant SET = 1; // tracks contract summoning set
     uint256 public proposalCount; // total proposals submitted
     uint256 public totalShares; // total shares across all members
     uint256 public totalLoot; // total loot across all members
@@ -148,8 +149,10 @@ contract Moloch is ReentrancyGuard {
     ) public {
         require(_periodDuration > 0, "_periodDuration zeroed");
         require(_votingPeriodLength > 0, "_votingPeriodLength zeroed");
+        require(_summoningTermination > 0, "_summoningTermination zeroed");
         require(_votingPeriodLength <= MAX_VOTING_PERIOD_LENGTH, "_votingPeriodLength maxed");
         require(_gracePeriodLength <= MAX_GRACE_PERIOD_LENGTH, "_gracePeriodLength maxed");
+        require(_summoningTermination <= MAX_SUMMON_PERIOD_LENGTH, "_gracePeriodLength maxed");
         require(_dilutionBound > 0, "_dilutionBound zeroed");
         require(_dilutionBound <= MAX_DILUTION_BOUND, "_dilutionBound maxed");
         require(_approvedTokens.length > 0, "need token");
@@ -192,12 +195,11 @@ contract Moloch is ReentrancyGuard {
     
     function makeSummoningTribute(uint256 tribute) public nonReentrant {
         require(members[msg.sender].exists == true, "not member");
-        require(now < summoningTermination, "summoning terminated");
+        require(getCurrentPeriod() <= _summoningTermination, "summoning period over");        
         require(tribute >= summoningRate, "tribute insufficient");
         require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "transfer failed");
         
         uint256 shares = tribute.div(summoningRate);
-        require(shares >= 1, "shares zeroed");
         require(totalShares + shares <= MAX_NUMBER_OF_SHARES_AND_LOOT, "shares maxed");
         members[msg.sender].shares += shares;
         totalShares += shares;
@@ -232,6 +234,7 @@ contract Moloch is ReentrancyGuard {
         require(_votingPeriodLength > 0, "_votingPeriodLength zeroed");
         require(_votingPeriodLength <= MAX_VOTING_PERIOD_LENGTH, "_votingPeriodLength maxed");
         require(_gracePeriodLength <= MAX_GRACE_PERIOD_LENGTH, "_gracePeriodLength maxed");
+        require(_summoningTermination <= MAX_SUMMON_PERIOD_LENGTH, "_summonTermination maxed");
         require(_dilutionBound > 0, "_dilutionBound zeroed");
         require(_dilutionBound <= MAX_DILUTION_BOUND, "_dilutionBound maxed");
         require(_proposalDeposit >= _processingReward, "_proposalDeposit < _processingReward");
