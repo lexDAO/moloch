@@ -71,10 +71,7 @@ contract Minion {
         Action memory action = actions[_proposalId];
         bool[6] memory flags = moloch.getProposalFlags(_proposalId);
 
-        // minion did not submit this proposal
         require(action.to != address(0), "invalid _proposalId");
-        // can't call arbitrary functions on parent moloch
-        require(action.to != address(moloch), "invalid target");
         require(!action.executed, "action executed");
         require(address(this).balance >= action.value, "insufficient eth");
         require(flags[2], "proposal not passed");
