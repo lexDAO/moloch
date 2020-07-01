@@ -16,8 +16,8 @@ contract Minion {
         bytes data;
     }
 
-    event ActionProposed(uint256 proposalId, address proposer);
-    event ActionExecuted(uint256 proposalId, address executor);
+    event ProposeAction(uint256 proposalId, address proposer);
+    event ExecuteAction(uint256 proposalId, address executor);
 
     constructor(address _moloch, address _molochDepositToken) public {
         moloch = IMoloch(_moloch);
@@ -63,7 +63,7 @@ contract Minion {
 
         actions[proposalId] = action;
 
-        emit ActionProposed(proposalId, msg.sender);
+        emit ProposeAction(proposalId, msg.sender);
         return proposalId;
     }
 
@@ -83,7 +83,7 @@ contract Minion {
         actions[_proposalId].executed = true;
         (bool success, bytes memory retData) = action.to.call.value(action.value)(action.data);
         require(success, "call failure");
-        emit ActionExecuted(_proposalId, msg.sender);
+        emit ExecuteAction(_proposalId, msg.sender);
         return retData;
     }
 
