@@ -197,7 +197,7 @@ contract Moloch is ReentrancyGuard {
         require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "transfer failed");
         
         uint256 shares = tribute.div(summoningRate);
-        require(shares > 0, "shares zeroed");
+        require(shares >= 1, "shares zeroed");
         require(totalShares + shares <= MAX_NUMBER_OF_SHARES_AND_LOOT, "shares maxed");
         members[msg.sender].shares += shares;
         totalShares += shares;
