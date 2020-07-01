@@ -4,13 +4,12 @@ import "./Minion.sol";
 
 contract MinionSummoner {
     Minion private minion;
-    address[] public molochs; // tracks summoned molochs for set
     address public molochSummoner;
     uint256 private status;
     uint256 private NOT_SET;
     uint256 private constant SET = 1;
     
-    event Summoned(address indexed minion, address indexed moloch);
+    event SummonMinion(address indexed minion);
 
     constructor() public {
         status = NOT_SET;
@@ -22,11 +21,10 @@ contract MinionSummoner {
         status = SET; // locks molochSummoner to this contract set
     }
 
-    function summonMinion(address moloch, address _molochDepositToken) public {
+    function summonMinion(address _moloch, address _molochDepositToken) external {
         require(msg.sender == molochSummoner, "not molochSummoner");
-        minion = new Minion(moloch, _molochDepositToken);
-        molochs.push(moloch);
+        minion = new Minion(_moloch, _molochDepositToken);
         
-        emit Summoned(address(minion), moloch);
+        emit SummonMinion(address(minion));
     }
 }
