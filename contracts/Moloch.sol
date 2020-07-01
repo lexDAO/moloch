@@ -56,7 +56,7 @@ contract Moloch is ReentrancyGuard {
     // *******************
     // INTERNAL ACCOUNTING
     // *******************
-    uint256 private status;
+    uint8 private status;
     uint8 private NOT_SET;
     uint8 private constant SET = 1; // tracks contract summoning set
     uint256 public proposalCount; // total proposals submitted
@@ -193,9 +193,9 @@ contract Moloch is ReentrancyGuard {
         status = SET; // locks minion for moloch contract set on summoning
     }
     
-    function makeSummoningTribute(uint256 tribute) public nonReentrant {
+    function makeSummoningTribute(uint256 tribute) external nonReentrant {
         require(members[msg.sender].exists == true, "not member");
-        require(getCurrentPeriod() <= _summoningTermination, "summoning period over");        
+        require(getCurrentPeriod() <= _summoningTermination, "summoning over");        
         require(tribute >= summoningRate, "tribute insufficient");
         require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "transfer failed");
         
@@ -228,7 +228,7 @@ contract Moloch is ReentrancyGuard {
         uint256 _summoningRate,
         uint256 _summoningTermination,
         bytes32 _manifesto
-    ) public nonReentrant {
+    ) external nonReentrant {
         require(msg.sender == minion, "not minion");
         require(_periodDuration > 0, "_periodDuration zeroed");
         require(_votingPeriodLength > 0, "_votingPeriodLength zeroed");
