@@ -193,18 +193,20 @@ contract Moloch is ReentrancyGuard {
     function makeSummoningTribute(uint256 tribute) public nonReentrant {
         require(members[msg.sender].exists == true, "not member");
         require(now < summoningTermination, "summoning terminated");
-        require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "tribute failed");
+        require(tribute >= summoningRate, "tribute insufficient");
+        require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "transfer failed");
+        
+        uint256 shares = tribute.div(summoningRate);
+        require(shares > 0, "shares zeroed");
+        require(totalShares + shares <= MAX_NUMBER_OF_SHARES_AND_LOOT, "shares maxed");
+        members[msg.sender].shares += shares;
+        totalShares += shares;
         
         if (userTokenBalances[GUILD][depositToken] == 0 && tribute > 0) {
             totalGuildBankTokens += 1;
         }
         
         unsafeAddToBalance(GUILD, depositToken, tribute);
-        
-        uint256 shares = tribute / summoningRate;
-        require(totalShares + shares <= MAX_NUMBER_OF_SHARES_AND_LOOT, "shares maxed");
-        members[msg.sender].shares += shares; 
-        totalShares += shares;
         
         emit MakeSummoningTribute(msg.sender, tribute, shares);
     }
