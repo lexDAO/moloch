@@ -27,9 +27,7 @@ contract Moloch is ReentrancyGuard {
     // HARD-CODED LIMITS
     // These numbers are quite arbitrary; they are small enough to avoid overflows when doing calculations
     // with periods or shares, yet big enough to not limit reasonable use cases.
-    uint256 constant MAX_VOTING_PERIOD_LENGTH = 10**18; // maximum length of voting period
-    uint256 constant MAX_GRACE_PERIOD_LENGTH = 10**18; // maximum length of grace period
-    uint256 constant MAX_DILUTION_BOUND = 10**18; // maximum dilution bound
+    uint256 constant MAX_INPUT = 10**18; // maximum bound for reasonable limits
     uint256 constant MAX_NUMBER_OF_SHARES_AND_LOOT = 10**18; // maximum number of shares that can be minted
     uint256 constant MAX_TOKEN_WHITELIST_COUNT = 400; // maximum number of whitelisted tokens
     uint256 constant MAX_TOKEN_GUILDBANK_COUNT = 200; // maximum number of tokens with non-zero balance in guildbank
@@ -146,9 +144,9 @@ contract Moloch is ReentrancyGuard {
         uint256 _summoningTermination,
         bytes32 _manifesto
     ) public {
-        require(_votingPeriodLength <= MAX_VOTING_PERIOD_LENGTH, "_votingPeriodLength maxed");
-        require(_gracePeriodLength <= MAX_GRACE_PERIOD_LENGTH, "_gracePeriodLength maxed");
-        require(_dilutionBound <= MAX_DILUTION_BOUND, "_dilutionBound maxed");
+        require(_votingPeriodLength <= MAX_INPUT, "_votingPeriodLength maxed");
+        require(_gracePeriodLength <= MAX_INPUT, "_gracePeriodLength maxed");
+        require(_dilutionBound <= MAX_INPUT, "_dilutionBound maxed");
         require(_approvedTokens.length > 0, "need token");
         require(_approvedTokens.length <= MAX_TOKEN_WHITELIST_COUNT, "tokens maxed");
         
@@ -188,7 +186,7 @@ contract Moloch is ReentrancyGuard {
     
     function makeSummoningTribute(uint256 tribute) external nonReentrant {
         require(members[msg.sender].exists == true, "not member");
-        require(getCurrentPeriod() <= summoningTermination, "summoning over");        
+        require(getCurrentPeriod() <= summoningTermination, "summoning period over");        
         require(tribute >= summoningRate, "tribute insufficient");
         require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "transfer failed");
         
@@ -223,9 +221,9 @@ contract Moloch is ReentrancyGuard {
         bytes32 _manifesto
     ) external nonReentrant {
         require(msg.sender == minion, "not minion");
-        require(_votingPeriodLength <= MAX_VOTING_PERIOD_LENGTH, "_votingPeriodLength maxed");
-        require(_gracePeriodLength <= MAX_GRACE_PERIOD_LENGTH, "_gracePeriodLength maxed");
-        require(_dilutionBound <= MAX_DILUTION_BOUND, "_dilutionBound maxed");
+        require(_votingPeriodLength <= MAX_INPUT, "_votingPeriodLength maxed");
+        require(_gracePeriodLength <= MAX_INPUT, "_gracePeriodLength maxed");
+        require(_dilutionBound <= MAX_INPUT, "_dilutionBound maxed");
         
         depositToken = _depositToken;
         minion = _minion;
@@ -255,7 +253,7 @@ contract Moloch is ReentrancyGuard {
         address paymentToken,
         string memory details
     ) public nonReentrant returns (uint256 proposalId) {
-        require(sharesRequested.add(lootRequested) <= MAX_NUMBER_OF_SHARES_AND_LOOT, "shares maxed");
+        require(sharesRequested.add(lootRequested) <= MAX_INPUT, "shares maxed");
         require(tokenWhitelist[tributeToken], "tributeToken not whitelisted");
         require(tokenWhitelist[paymentToken], "payment not whitelisted");
         require(applicant != address(0), "applicant cannot be 0");
@@ -437,7 +435,7 @@ contract Moloch is ReentrancyGuard {
         bool didPass = _didPass(proposalIndex);
 
         // Make the proposal fail if the new total number of shares and loot exceeds the limit
-        if (totalShares.add(totalLoot).add(proposal.sharesRequested).add(proposal.lootRequested) > MAX_NUMBER_OF_SHARES_AND_LOOT) {
+        if (totalShares.add(totalLoot).add(proposal.sharesRequested).add(proposal.lootRequested) > MAX_INPUT) {
             didPass = false;
         }
 
