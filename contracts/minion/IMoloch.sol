@@ -13,7 +13,7 @@ interface IMoloch {
         address tributeToken,
         uint256 paymentRequested,
         address paymentToken,
-        bytes32 details
+        string calldata details
     ) external returns (uint256);
     
     function withdrawBalance(address token, uint256 amount) external;
