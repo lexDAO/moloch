@@ -34,13 +34,13 @@ contract Minion {
         address _actionTo,
         uint256 _actionValue,
         bytes memory _actionData,
-        bytes32 _description
+        string memory _description
     ) public returns (uint256) {
         // No calls to zero address allows us to check that minion submitted
         // the proposal without getting the proposal struct from the moloch
         require(_actionTo != address(0), "invalid _actionTo");
 
-        bytes32 details = keccak256(abi.encodePacked(MINION_ACTION_DETAILS, _description, '"}'));
+        string memory details = string(abi.encodePacked(MINION_ACTION_DETAILS, _description, '"}'));
 
         uint256 proposalId = moloch.submitProposal(
             address(this),
