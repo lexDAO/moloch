@@ -21,7 +21,7 @@ contract Moloch is ReentrancyGuard {
     uint256 public summoningTime; // needed to determine the current period
 
     address public depositToken; // deposit token contract reference; default = wETH
-    address public minion; // contract that allows execution of arbitrary calls voted on by members // gov. param adjustments
+    address payable public minion; // contract that allows execution of arbitrary calls voted on by members // gov. param adjustments
     bytes32 public manifesto; // public manifesto data (e.g., credo, company charter, operating agreement, membership terms)
 
     // HARD-CODED LIMITS
@@ -36,7 +36,6 @@ contract Moloch is ReentrancyGuard {
     // ***************
     event SummonComplete(address[] indexed summoners, address[] tokens, uint256 summoningTime, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 proposalDeposit, uint256 dilutionBound, uint256 processingReward, uint256 summoningRate, uint256 summoningTermination, bytes32 manifesto);
     event MakeSummoningTribute(address indexed memberAddress, uint256 indexed tribute, uint256 indexed shares);
-    event MakePayment(address indexed sender, address indexed paymentToken, uint256 indexed payment);
     event AmendGovernance(address indexed depositToken, address indexed minion, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 proposalDeposit, uint256 dilutionBound, uint256 processingReward, uint256 summoningRate, uint256 summoningTermination, bytes32 manifesto);
     event SubmitProposal(address indexed applicant, uint256 sharesRequested, uint256 lootRequested, uint256 tributeOffered, address tributeToken, uint256 paymentRequested, address paymentToken, bytes32 details, bool[6] flags, uint256 proposalId, address indexed delegateKey, address indexed memberAddress);
     event SponsorProposal(address indexed delegateKey, address indexed memberAddress, uint256 proposalId, uint256 proposalIndex, uint256 startingPeriod);
@@ -145,10 +144,8 @@ contract Moloch is ReentrancyGuard {
         bytes32 _manifesto
     ) public {
         require(_periodDuration > 0, "_periodDuration zeroed");
-        require(_votingPeriodLength > 0, "_votingPeriodLength zeroed");
         require(_votingPeriodLength <= MAX_INPUT, "_votingPeriodLength maxed");
         require(_gracePeriodLength <= MAX_INPUT, "_gracePeriodLength maxed");
-        require(_dilutionBound > 0, "_dilutionBound zeroed");
         require(_dilutionBound <= MAX_INPUT, "_dilutionBound maxed");
         require(_approvedTokens.length > 0, "need token");
         require(_approvedTokens.length <= MAX_TOKEN_WHITELIST_COUNT, "tokens maxed");
@@ -182,17 +179,24 @@ contract Moloch is ReentrancyGuard {
         status = NOT_SET;
     }
     
-    function setMinion(address _minion) public nonReentrant {
+    function setMinion(address payable _minion) public nonReentrant {
         require(status != SET, "already set");
         minion = _minion;
         status = SET; // locks minion for moloch contract set on summoning
     }
     
-    function makeSummoningTribute(uint256 tribute) public nonReentrant {
+    function makeSummoningTribute(uint256 tribute) payable public nonReentrant {
         require(members[msg.sender].exists == true, "not member");
         require(getCurrentPeriod() <= summoningTermination, "summoning period over");        
         require(tribute >= summoningRate, "tribute insufficient");
-        require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "transfer failed");
+
+        if (msg.value > 0) {
+            require(msg.value == tribute, "insufficient ETH");
+            (bool success, ) = minion.call.value(tribute)("");
+            require(success, "transfer failed");
+        } else {
+            require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "transfer failed");
+        }
         
         uint256 shares = tribute.div(summoningRate);
         require(totalShares + shares <= MAX_INPUT, "shares maxed");
@@ -207,26 +211,13 @@ contract Moloch is ReentrancyGuard {
         
         emit MakeSummoningTribute(msg.sender, tribute, shares);
     }
-    
-    function makePayment(address paymentToken, uint256 payment) public nonReentrant {
-        require(tokenWhitelist[paymentToken], "payment not whitelisted");
-        require(IERC20(paymentToken).transferFrom(msg.sender, address(this), payment), "transfer failed");
-        
-        if (userTokenBalances[GUILD][paymentToken] == 0 && payment > 0) {
-            totalGuildBankTokens += 1;
-        }
-        
-        unsafeAddToBalance(GUILD, paymentToken, payment);
-        
-        emit MakePayment(msg.sender, paymentToken, payment);
-    }
-    
+
     /****************
     MINION GOVERNANCE
     ****************/
     function amendGovernance(
         address _depositToken,
-        address _minion,
+        address payable _minion,
         uint256 _periodDuration, 
         uint256 _votingPeriodLength, 
         uint256 _gracePeriodLength, 
@@ -239,10 +230,8 @@ contract Moloch is ReentrancyGuard {
     ) public nonReentrant {
         require(msg.sender == minion, "not minion");
         require(_periodDuration > 0, "_periodDuration zeroed");
-        require(_votingPeriodLength > 0, "_votingPeriodLength zeroed");
         require(_votingPeriodLength <= MAX_INPUT, "_votingPeriodLength maxed");
         require(_gracePeriodLength <= MAX_INPUT, "_gracePeriodLength maxed");
-        require(_dilutionBound > 0, "_dilutionBound zeroed");
         require(_dilutionBound <= MAX_INPUT, "_dilutionBound maxed");
         require(_proposalDeposit >= _processingReward, "_proposalDeposit < _processingReward");
         
