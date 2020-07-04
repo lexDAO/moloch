@@ -237,6 +237,7 @@ contract Moloch is ReentrancyGuard {
         uint256 _summoningTermination,
         bytes32 _manifesto
     ) public nonReentrant {
+        require(msg.sender == minion, "not minion");
         require(_periodDuration > 0, "_periodDuration zeroed");
         require(_votingPeriodLength > 0, "_votingPeriodLength zeroed");
         require(_votingPeriodLength <= MAX_INPUT, "_votingPeriodLength maxed");
