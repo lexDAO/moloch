@@ -5,7 +5,6 @@ import "./IMoloch.sol";
 contract Minion {
     IMoloch public moloch;
     address private molochDepositToken;
-    string public constant MINION_ACTION_DETAILS = '{"isMinion": true, "title":"MINION", "description":"';
     mapping(uint256 => Action) public actions; // proposalId => Action
 
     struct Action {
@@ -22,25 +21,23 @@ contract Minion {
     constructor(address _moloch, address _molochDepositToken) public {
         moloch = IMoloch(_moloch);
         molochDepositToken = _molochDepositToken;
-        moloch.setMinion(address(this));
+        moloch.setMinion(address(this)); // locks minion for moloch contract set on summoning 
     }
 
     // withdraw funds from the moloch
-    function doWithdraw(address _token, uint256 _amount) public {
-        moloch.withdrawBalance(_token, _amount);
+    function doWithdraw(address token, uint256 amount) public {
+        moloch.withdrawBalance(token, amount);
     }
 
     function proposeAction(
-        address _actionTo,
-        uint256 _actionValue,
-        bytes memory _actionData,
-        string memory _description
+        address actionTo,
+        uint256 actionValue,
+        bytes memory actionData,
+        bytes32 details
     ) public returns (uint256) {
         // No calls to zero address allows us to check that minion submitted
         // the proposal without getting the proposal struct from the moloch
-        require(_actionTo != address(0), "invalid _actionTo");
-
-        string memory details = string(abi.encodePacked(MINION_ACTION_DETAILS, _description, '"}'));
+        require(actionTo != address(0), "invalid actionTo");
 
         uint256 proposalId = moloch.submitProposal(
             address(this),
@@ -54,11 +51,11 @@ contract Minion {
         );
 
         Action memory action = Action({
-            value: _actionValue,
-            to: _actionTo,
+            value: actionValue,
+            to: actionTo,
             proposer: msg.sender,
             executed: false,
-            data: _actionData
+            data: actionData
         });
 
         actions[proposalId] = action;
@@ -67,20 +64,20 @@ contract Minion {
         return proposalId;
     }
 
-    function executeAction(uint256 _proposalId) public returns (bytes memory) {
-        Action memory action = actions[_proposalId];
-        bool[6] memory flags = moloch.getProposalFlags(_proposalId);
+    function executeAction(uint256 proposalId) public returns (bytes memory) {
+        Action memory action = actions[proposalId];
+        bool[6] memory flags = moloch.getProposalFlags(proposalId);
 
-        require(action.to != address(0), "invalid _proposalId");
+        require(action.to != address(0), "invalid proposalId");
         require(!action.executed, "action executed");
         require(address(this).balance >= action.value, "insufficient eth");
         require(flags[2], "proposal not passed");
 
         // execute call
-        actions[_proposalId].executed = true;
+        actions[proposalId].executed = true;
         (bool success, bytes memory retData) = action.to.call.value(action.value)(action.data);
         require(success, "call failure");
-        emit ExecuteAction(_proposalId, msg.sender);
+        emit ExecuteAction(proposalId, msg.sender);
         return retData;
     }
 
