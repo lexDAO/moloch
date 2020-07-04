@@ -9,9 +9,9 @@ contract MolochSummoner {
     
     event SummonMoloch(address indexed moloch);
 
-    constructor(address _minionSummoner) public { // locks minionSummoner to contract set
+    constructor(address _minionSummoner) public { 
         minionSummoner = ISummonMinion(_minionSummoner);
-        minionSummoner.setMolochSummoner(address(this));
+        minionSummoner.setMolochSummoner(address(this)); // locks minionSummoner to molochSummoner
     }
 
     function summonMoloch(
