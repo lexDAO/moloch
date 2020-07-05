@@ -35,7 +35,7 @@ contract Moloch is ReentrancyGuard {
     // ***************
     // EVENTS
     // ***************
-    event SummonComplete(address[] indexed summoners, address[] tokens, uint256 summoningTime, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 proposalDeposit, uint256 dilutionBound, uint256 processingReward, uint256 summonerStake, uint256 summoningRate, uint256 summoningTermination);
+    event SummonComplete(address[] indexed summoners, address[] tokens, uint256 summoningTime, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 proposalDeposit, uint256 dilutionBound, uint256 processingReward, uint256 summonerStake, uint256 summoningDeposit, uint256 summoningRate, uint256 summoningTermination);
     event MakeSummoningTribute(address indexed memberAddress, uint256 indexed tribute, uint256 indexed shares);
     event SubmitProposal(address indexed applicant, uint256 sharesRequested, uint256 lootRequested, uint256 tributeOffered, address tributeToken, uint256 paymentRequested, address paymentToken, bytes32 details, bool[6] flags, uint256 proposalId, address indexed delegateKey, address indexed memberAddress);
     event SponsorProposal(address indexed delegateKey, address indexed memberAddress, uint256 proposalId, uint256 proposalIndex, uint256 startingPeriod);
@@ -52,9 +52,6 @@ contract Moloch is ReentrancyGuard {
     // *******************
     // INTERNAL ACCOUNTING
     // *******************
-    uint8 private status;
-    uint8 private NOT_SET;
-    uint8 private constant SET = 1; // tracks contract summoning set
     uint256 public proposalCount; // total proposals submitted
     uint256 public totalShares; // total shares across all members
     uint256 public totalLoot; // total loot across all members
@@ -158,7 +155,7 @@ contract Moloch is ReentrancyGuard {
         }
         
         // NOTE: move event up here, avoid stack too deep if too many approved tokens
-        emit SummonComplete(_summoners, _approvedTokens, now, _periodDuration, _votingPeriodLength, _gracePeriodLength, _proposalDeposit, _dilutionBound, _processingReward, _summonerStake, _summoningRate, _summoningTermination);
+        emit SummonComplete(_summoners, _approvedTokens, now, _periodDuration, _votingPeriodLength, _gracePeriodLength, _proposalDeposit, _dilutionBound, _processingReward, _summonerStake, _summoningDeposit, _summoningRate, _summoningTermination);
         
         for (uint256 i = 0; i < _summoners.length; i++) {
             members[_summoners[i]] = Member(_summoners[i], _summonerStake, 0, true, 0, 0);
@@ -180,16 +177,9 @@ contract Moloch is ReentrancyGuard {
         summoningRate = _summoningRate;
         summoningTermination = _summoningTermination;
         summoningTime = now;
-        status = NOT_SET;
         totalShares = _summoners.length.mul(_summonerStake);
     }
-    
-    function setMinion(address _minion) public nonReentrant {
-        require(status != SET, "already set");
-        minion = _minion;
-        status = SET; // locks minion for moloch contract set on summoning
-    }
-    
+
     function makeSummoningTribute(uint256 tribute) payable public nonReentrant {
         require(members[msg.sender].exists == true, "not member");
         require(getCurrentPeriod() <= summoningTermination, "summoning period over");        
