@@ -23,7 +23,7 @@ contract Moloch is ReentrancyGuard {
 
     address public depositToken; // deposit token contract reference; default = wETH
     address private wETH; // wrapping contract for raw payable ether
-    address payable public minion; // contract that allows execution of arbitrary calls voted on by members // gov. param adjustments
+    address public minion; // contract that allows execution of arbitrary calls voted on by members // gov. param adjustments
     bytes32 public manifesto; // public manifesto data (e.g., credo, company charter, operating agreement, membership terms)
 
     // HARD-CODED LIMITS
@@ -220,7 +220,7 @@ contract Moloch is ReentrancyGuard {
     ****************/
     function amendGovernance(
         address _depositToken,
-        address payable _minion,
+        address _minion,
         uint256 _periodDuration, 
         uint256 _votingPeriodLength, 
         uint256 _gracePeriodLength, 
