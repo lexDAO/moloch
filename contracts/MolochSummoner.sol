@@ -11,7 +11,7 @@ contract MolochSummoner {
 
     constructor(address _minionSummoner) public { 
         minionSummoner = ISummonMinion(_minionSummoner);
-        minionSummoner.setMolochSummoner(address(this)); // locks minionSummoner to molochSummoner
+        minionSummoner.setMolochSummoner(address(this)); // lock minionSummoner to molochSummoner
     }
 
     function summonMoloch(
@@ -49,7 +49,7 @@ contract MolochSummoner {
             require(IERC20(_approvedTokens[0]).transferFrom(msg.sender, moloch, _summoningDeposit), "transfer failed"); // transfer summoning deposit to new moloch
         }
        
-        minionSummoner.summonMinion(moloch, _approvedTokens[0]); // summons minion for new moloch
+        minionSummoner.summonMinion(moloch, _approvedTokens[0]); // summon minion for new moloch
         
         emit SummonMoloch(moloch);
     }
