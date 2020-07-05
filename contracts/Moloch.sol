@@ -22,7 +22,7 @@ contract Moloch is ReentrancyGuard {
     uint256 public summoningTime; // needed to determine the current period
 
     address public depositToken; // deposit token contract reference; default = wETH
-    address private wETH; // wrapping contract for raw payable ether
+    address private wETH = 0xc778417E063141139Fce010982780140Aa0cD5Ab; // wrapping contract for raw payable ether
     address public minion; // contract that allows execution of arbitrary calls voted on by members // gov. param adjustments
     bytes32 public manifesto; // public manifesto data (e.g., credo, company charter, operating agreement, membership terms)
 
@@ -135,7 +135,6 @@ contract Moloch is ReentrancyGuard {
     constructor(
         address[] memory _summoners,
         address[] memory _approvedTokens,
-        address _wETH,
         uint256 _periodDuration,
         uint256 _votingPeriodLength,
         uint256 _gracePeriodLength,
@@ -146,13 +145,11 @@ contract Moloch is ReentrancyGuard {
         uint256 _summoningTermination,
         bytes32 _manifesto
     ) public {
-        require(_periodDuration > 0, "_periodDuration zeroed");
         require(_votingPeriodLength <= MAX_INPUT, "_votingPeriodLength maxed");
         require(_gracePeriodLength <= MAX_INPUT, "_gracePeriodLength maxed");
         require(_dilutionBound <= MAX_INPUT, "_dilutionBound maxed");
         require(_approvedTokens.length > 0, "need token");
         require(_approvedTokens.length <= MAX_TOKEN_WHITELIST_COUNT, "tokens maxed");
-        require(_proposalDeposit >= _processingReward, "_proposalDeposit < _processingReward");
         
         depositToken = _approvedTokens[0];
         // NOTE: move event up here, avoid stack too deep if too many approved tokens
@@ -169,7 +166,6 @@ contract Moloch is ReentrancyGuard {
             approvedTokens.push(_approvedTokens[i]);
         }
         
-        wETH = _wETH;
         periodDuration = _periodDuration;
         votingPeriodLength = _votingPeriodLength;
         gracePeriodLength = _gracePeriodLength;
@@ -183,7 +179,7 @@ contract Moloch is ReentrancyGuard {
         status = NOT_SET;
     }
     
-    function setMinion(address payable _minion) public nonReentrant {
+    function setMinion(address _minion) public nonReentrant {
         require(status != SET, "already set");
         minion = _minion;
         status = SET; // locks minion for moloch contract set on summoning
@@ -214,13 +210,13 @@ contract Moloch is ReentrancyGuard {
 
         emit MakeSummoningTribute(msg.sender, tribute, shares);
     }
-    
+
     /****************
     MINION GOVERNANCE
     ****************/
     function amendGovernance(
         address _depositToken,
-        address _minion,
+        address payable _minion,
         uint256 _periodDuration, 
         uint256 _votingPeriodLength, 
         uint256 _gracePeriodLength, 
@@ -232,11 +228,9 @@ contract Moloch is ReentrancyGuard {
         bytes32 _manifesto
     ) public nonReentrant {
         require(msg.sender == minion, "not minion");
-        require(_periodDuration > 0, "_periodDuration zeroed");
         require(_votingPeriodLength <= MAX_INPUT, "_votingPeriodLength maxed");
         require(_gracePeriodLength <= MAX_INPUT, "_gracePeriodLength maxed");
         require(_dilutionBound <= MAX_INPUT, "_dilutionBound maxed");
-        require(_proposalDeposit >= _processingReward, "_proposalDeposit < _processingReward");
         
         depositToken = _depositToken;
         minion = _minion;
@@ -266,19 +260,19 @@ contract Moloch is ReentrancyGuard {
         address paymentToken,
         bytes32 details
     ) public nonReentrant returns (uint256 proposalId) {
-        require(sharesRequested.add(lootRequested) <= MAX_INPUT, "shares maxed");
-        require(tokenWhitelist[tributeToken], "tributeToken not whitelisted");
-        require(tokenWhitelist[paymentToken], "payment not whitelisted");
+        require(sharesRequested.add(lootRequested) <= MAX_INPUT, "too many shares requested");
+        require(tokenWhitelist[tributeToken], "tributeToken is not whitelisted");
+        require(tokenWhitelist[paymentToken], "payment is not whitelisted");
         require(applicant != address(0), "applicant cannot be 0");
-        require(applicant != GUILD && applicant != ESCROW && applicant != TOTAL, "applicant unreservable ");
-        require(members[applicant].jailed == 0, "applicant jailed");
+        require(applicant != GUILD && applicant != ESCROW && applicant != TOTAL, "applicant address cannot be reserved");
+        require(members[applicant].jailed == 0, "proposal applicant must not be jailed");
 
         if (tributeOffered > 0 && userTokenBalances[GUILD][tributeToken] == 0) {
-            require(totalGuildBankTokens < MAX_TOKEN_GUILDBANK_COUNT, "guildbank maxed");
+            require(totalGuildBankTokens < MAX_TOKEN_GUILDBANK_COUNT, 'cannot submit more tribute proposals for new tokens - guildbank is full');
         }
 
         // collect tribute from proposer and store it in the Moloch until the proposal is processed
-        require(IERC20(tributeToken).transferFrom(msg.sender, address(this), tributeOffered), "tribute failed");
+        require(IERC20(tributeToken).transferFrom(msg.sender, address(this), tributeOffered), "tribute token transfer failed");
         unsafeAddToBalance(ESCROW, tributeToken, tributeOffered);
 
         bool[6] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick]
