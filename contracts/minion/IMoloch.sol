@@ -1,6 +1,6 @@
 pragma solidity 0.5.17;
 
-interface IMoloch {
+interface IMoloch { // brief interface for minion txs to parent moloch
     function getProposalFlags(uint256 proposalId) external view returns (bool[6] memory);
     
     function setMinion(address minion) external;
