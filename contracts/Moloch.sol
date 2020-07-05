@@ -204,7 +204,15 @@ contract Moloch is ReentrancyGuard {
 
         emit MakeSummoningTribute(msg.sender, tribute, shares);
     }
+    
+    function makePayment(address paymentToken, uint256 payment) public {
+        require(tokenWhitelist[paymentToken], "paymentToken not whitelisted");
+        require(IERC20(paymentToken).transferFrom(msg.sender, address(this), payment), "transfer failed");
 
+        unsafeAddToBalance(GUILD, paymentToken, payment);
+        if (userTokenBalances[GUILD][paymentToken] == 0) {totalGuildBankTokens += 1;}
+    }
+    
     /*****************
     PROPOSAL FUNCTIONS
     *****************/
@@ -220,7 +228,7 @@ contract Moloch is ReentrancyGuard {
     ) payable public nonReentrant returns (uint256 proposalId) {
         require(sharesRequested.add(lootRequested) <= MAX_INPUT, "shares maxed");
         require(tokenWhitelist[tributeToken], "tributeToken not whitelisted");
-        require(tokenWhitelist[paymentToken], "payment not whitelisted");
+        require(tokenWhitelist[paymentToken], "paymentToken not whitelisted");
         require(applicant != address(0), "applicant zeroed");
         require(applicant != GUILD && applicant != ESCROW && applicant != TOTAL, "applicant address unreservable");
         require(members[applicant].jailed == 0, "applicant jailed");
