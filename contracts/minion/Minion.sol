@@ -21,7 +21,6 @@ contract Minion {
     constructor(address _moloch, address _molochDepositToken) public {
         moloch = IMoloch(_moloch);
         molochDepositToken = _molochDepositToken;
-        moloch.setMinion(address(this)); // lock minion to parent moloch on summoning 
     }
 
     function doWithdraw(address token, uint256 amount) public {
