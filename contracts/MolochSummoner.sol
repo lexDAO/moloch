@@ -4,7 +4,7 @@ import "./Moloch.sol";
 import "./ISummonMinion.sol";
 
 contract MolochSummoner {
-    Moloch private moloch;
+    Moloch private baal;
     ISummonMinion public minionSummoner;
     
     event SummonMoloch(address indexed moloch);
@@ -23,11 +23,13 @@ contract MolochSummoner {
         uint256 _proposalDeposit,
         uint256 _dilutionBound,
         uint256 _processingReward,
+        uint256 _summonerStake,
+        uint256 _summoningDeposit,
         uint256 _summoningRate,
-        uint256 _summoningTermination,
-        bytes32 _manifesto
+        uint256 _summoningTermination
     ) public {
-        moloch = new Moloch(
+        // new magick set
+        baal = new Moloch(
             _summoners,
             _approvedTokens,
             _periodDuration,
@@ -35,12 +37,20 @@ contract MolochSummoner {
             _gracePeriodLength,
             _proposalDeposit,
             _dilutionBound,
-            _processingReward, 
+            _processingReward,
+            _summonerStake,
+            _summoningDeposit,
             _summoningRate,
-            _summoningTermination,
-            _manifesto);
+            _summoningTermination);
         
-        minionSummoner.summonMinion(address(moloch), _approvedTokens[0]); // summons minion for new moloch
-        emit SummonMoloch(address(moloch));
+        address moloch = address(baal);
+        
+        if (_summoningDeposit > 0) {
+            require(IERC20(_approvedTokens[0]).transferFrom(msg.sender, moloch, _summoningDeposit), "transfer failed"); // transfer summoning deposit to new moloch
+        }
+       
+        minionSummoner.summonMinion(moloch, _approvedTokens[0]); // summons minion for new moloch
+        
+        emit SummonMoloch(moloch);
     }
 }
