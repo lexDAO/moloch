@@ -21,12 +21,11 @@ contract Minion {
     constructor(address _moloch, address _molochDepositToken) public {
         moloch = IMoloch(_moloch);
         molochDepositToken = _molochDepositToken;
-        moloch.setMinion(address(this)); // locks minion for moloch contract set on summoning 
+        moloch.setMinion(address(this)); // lock minion to parent moloch on summoning 
     }
 
-    // withdraw funds from the moloch
     function doWithdraw(address token, uint256 amount) public {
-        moloch.withdrawBalance(token, amount);
+        moloch.withdrawBalance(token, amount); // withdraw funds from parent moloch
     }
 
     function proposeAction(
@@ -36,7 +35,7 @@ contract Minion {
         bytes32 details
     ) public returns (uint256) {
         // No calls to zero address allows us to check that minion submitted
-        // the proposal without getting the proposal struct from the moloch
+        // the proposal without getting the proposal struct from parent moloch
         require(actionTo != address(0), "invalid actionTo");
 
         uint256 proposalId = moloch.submitProposal(
