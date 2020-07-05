@@ -2,6 +2,7 @@ pragma solidity 0.5.17;
 
 import "./oz/SafeMath.sol";
 import "./oz/IERC20.sol";
+import "./IWETH.sol";
 import "./oz/ReentrancyGuard.sol";
 
 contract Moloch is ReentrancyGuard {
@@ -21,6 +22,7 @@ contract Moloch is ReentrancyGuard {
     uint256 public summoningTime; // needed to determine the current period
 
     address public depositToken; // deposit token contract reference; default = wETH
+    address private wETH; // wrapping contract for raw payable ether
     address payable public minion; // contract that allows execution of arbitrary calls voted on by members // gov. param adjustments
     bytes32 public manifesto; // public manifesto data (e.g., credo, company charter, operating agreement, membership terms)
 
@@ -133,6 +135,7 @@ contract Moloch is ReentrancyGuard {
     constructor(
         address[] memory _summoners,
         address[] memory _approvedTokens,
+        address _wETH,
         uint256 _periodDuration,
         uint256 _votingPeriodLength,
         uint256 _gracePeriodLength,
@@ -166,6 +169,7 @@ contract Moloch is ReentrancyGuard {
             approvedTokens.push(_approvedTokens[i]);
         }
         
+        wETH = _wETH;
         periodDuration = _periodDuration;
         votingPeriodLength = _votingPeriodLength;
         gracePeriodLength = _gracePeriodLength;
@@ -190,28 +194,27 @@ contract Moloch is ReentrancyGuard {
         require(getCurrentPeriod() <= summoningTermination, "summoning period over");        
         require(tribute >= summoningRate, "tribute insufficient");
 
-        if (msg.value > 0) {
+        if (depositToken == wETH && msg.value > 0) {
             require(msg.value == tribute, "insufficient ETH");
-            (bool success, ) = minion.call.value(tribute)("");
+            IWETH(wETH).deposit();
+            (bool success, ) = wETH.call.value(msg.value)("");
             require(success, "transfer failed");
+            if (userTokenBalances[GUILD][depositToken] == 0 && tribute > 0) {totalGuildBankTokens += 1;}
+            unsafeAddToBalance(GUILD, depositToken, tribute);
         } else {
             require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "transfer failed");
+            if (userTokenBalances[GUILD][depositToken] == 0 && tribute > 0) {totalGuildBankTokens += 1;}
+            unsafeAddToBalance(GUILD, depositToken, tribute);
         }
         
         uint256 shares = tribute.div(summoningRate);
         require(totalShares + shares <= MAX_INPUT, "shares maxed");
         members[msg.sender].shares += shares;
         totalShares += shares;
-        
-        if (userTokenBalances[GUILD][depositToken] == 0 && tribute > 0) {
-            totalGuildBankTokens += 1;
-        }
-        
-        unsafeAddToBalance(GUILD, depositToken, tribute);
-        
+
         emit MakeSummoningTribute(msg.sender, tribute, shares);
     }
-
+    
     /****************
     MINION GOVERNANCE
     ****************/
