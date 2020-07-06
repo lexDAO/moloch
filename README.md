@@ -13,9 +13,6 @@
 * **Minion Attaché** 🕯️ 👺 🕯️
 > `Moloch` w/ `Minion` summoned that allows execution of arbitrary calls voted on by members 
 
-* **Adjustable Governance** 📻 📜 📻
-> `Minion` preset to adjust governance params, voting settings, summon new sales
-
 ***misc:***
 
 * most recent [OpenZeppelin contracts](https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/contracts) w/ trimmed comments / error msgs.
@@ -26,7 +23,7 @@ These upgrades also reflect a 'more modular Moloch' design, using dual-summoning
 
 ***try things out:*** 🧙 *2x BETA* / Summoning Circle Sale w/ Minion /
 
->[Rinkeby Summoner](https://rinkeby.etherscan.io/address/0xD75B24b0CbB2d1c4623f3d2D87097499B49A8315#code)
+>[Rinkeby Summoner](https://rinkeby.etherscan.io/address/0x5105b6b068dA5C818D6Ba09103bE7393ECBD2DbC#code)
 
 STEAL THIS CODE
 
