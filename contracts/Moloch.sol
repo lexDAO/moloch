@@ -18,7 +18,7 @@ contract Moloch is ReentrancyGuard {
     uint256 public dilutionBound; // default = 3 - maximum multiplier a YES voter will be obligated to pay in case of mass ragequit
     uint256 public processingReward; // default = 0.1 - amount of ETH to give to whoever processes a proposal
     uint256 public summoningRate; // rate to convert into shares during summoning time (default = 1000000000000000000 wei amt. // 1 wETH => 1 share)
-    uint256 public summoningTermination; // termination time for summoning tribute (can be restarted via governance param adjustments)
+    uint256 public summoningTermination; // termination time for summoning tribute in moloch periods
     uint256 public summoningTime; // needed to determine the current period
 
     address public depositToken; // deposit token contract reference; default = wETH
