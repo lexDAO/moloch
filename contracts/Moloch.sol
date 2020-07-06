@@ -194,8 +194,8 @@ contract Moloch is ReentrancyGuard {
             require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "transfer failed");
         }
         
-        unsafeAddToBalance(GUILD, depositToken, tribute);
         if (userTokenBalances[GUILD][depositToken] == 0) {totalGuildBankTokens += 1;}
+        unsafeAddToBalance(GUILD, depositToken, tribute);
         
         uint256 shares = tribute.div(summoningRate);
         require(totalShares + shares <= MAX_INPUT, "shares maxed");
@@ -208,9 +208,9 @@ contract Moloch is ReentrancyGuard {
     function makePayment(address paymentToken, uint256 payment) public {
         require(tokenWhitelist[paymentToken], "paymentToken not whitelisted");
         require(IERC20(paymentToken).transferFrom(msg.sender, address(this), payment), "transfer failed");
-
-        unsafeAddToBalance(GUILD, paymentToken, payment);
+        
         if (userTokenBalances[GUILD][paymentToken] == 0) {totalGuildBankTokens += 1;}
+        unsafeAddToBalance(GUILD, paymentToken, payment);
     }
     
     /*****************
