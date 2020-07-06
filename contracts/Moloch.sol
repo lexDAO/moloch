@@ -176,6 +176,7 @@ contract Moloch is ReentrancyGuard {
         summoningTermination = _summoningTermination;
         summoningTime = now;
         totalShares = _summoners.length.mul(_summonerStake);
+        require(totalShares <= MAX_INPUT, "shares maxed");
     }
 
     function makeSummoningTribute(uint256 tribute) payable public {
