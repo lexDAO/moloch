@@ -28,7 +28,6 @@ contract MolochSummoner {
         uint256 _summoningRate,
         uint256 _summoningTermination
     ) public {
-        // new magick set
         baal = new Moloch(
             _summoners,
             _approvedTokens,
