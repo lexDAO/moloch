@@ -8,9 +8,9 @@ import "./oz/ReentrancyGuard.sol";
 contract Moloch is ReentrancyGuard {
     using SafeMath for uint256;
 
-    /****************
-    GOVERNANCE PARAMS
-    ****************/
+    /***************
+    GLOBAL CONSTANTS
+    ***************/
     uint256 public periodDuration; // default = 17280 = 4.8 hours in seconds (5 periods per day)
     uint256 public votingPeriodLength; // default = 35 periods (7 days)
     uint256 public gracePeriodLength; // default = 35 periods (7 days)
@@ -23,7 +23,6 @@ contract Moloch is ReentrancyGuard {
 
     address public depositToken; // deposit token contract reference; default = wETH
     address public wETH = 0xc778417E063141139Fce010982780140Aa0cD5Ab; // wrapping contract for raw payable ether
-    address public minion; // contract that allows execution of arbitrary calls voted on by members // gov. param adjustments
 
     // HARD-CODED LIMITS
     // These numbers are quite arbitrary; they are small enough to avoid overflows when doing calculations
