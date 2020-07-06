@@ -143,7 +143,6 @@ contract Moloch is ReentrancyGuard {
         require(_votingPeriodLength <= MAX_INPUT, "_votingPeriodLength maxed");
         require(_gracePeriodLength <= MAX_INPUT, "_gracePeriodLength maxed");
         require(_dilutionBound <= MAX_INPUT, "_dilutionBound maxed");
-        require(_approvedTokens.length > 0, "need token");
         require(_approvedTokens.length <= MAX_TOKEN_WHITELIST_COUNT, "tokens maxed");
         
         depositToken = _approvedTokens[0];
@@ -179,7 +178,7 @@ contract Moloch is ReentrancyGuard {
         totalShares = _summoners.length.mul(_summonerStake);
     }
 
-    function makeSummoningTribute(uint256 tribute) payable public nonReentrant {
+    function makeSummoningTribute(uint256 tribute) payable public {
         require(members[msg.sender].exists == true, "not member");
         require(getCurrentPeriod() <= summoningTermination, "summoning period over");        
         require(tribute >= summoningRate, "tribute insufficient");
@@ -189,6 +188,7 @@ contract Moloch is ReentrancyGuard {
             IWETH(wETH).deposit();
             (bool success, ) = wETH.call.value(msg.value)("");
             require(success, "transfer failed");
+            IWETH(wETH).transfer(address(this), msg.value);
         } else {
             require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "transfer failed");
         }
@@ -242,6 +242,7 @@ contract Moloch is ReentrancyGuard {
             IWETH(wETH).deposit();
             (bool success, ) = wETH.call.value(msg.value)("");
             require(success, "transfer failed");
+            IWETH(wETH).transfer(address(this), msg.value);
         } else {
             require(IERC20(tributeToken).transferFrom(msg.sender, address(this), tributeOffered), "transfer failed");
         }
