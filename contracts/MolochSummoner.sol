@@ -44,9 +44,7 @@ contract MolochSummoner {
         
         address moloch = address(baal);
         
-        if (_summoningDeposit > 0) {
-            require(IERC20(_approvedTokens[0]).transferFrom(msg.sender, moloch, _summoningDeposit), "transfer failed"); // transfer summoning deposit to new moloch
-        }
+        require(IERC20(_approvedTokens[0]).transferFrom(msg.sender, moloch, _summoningDeposit), "transfer failed"); // transfer summoning deposit to new moloch
        
         minionSummoner.summonMinion(moloch, _approvedTokens[0]); // summon minion for new moloch
         
