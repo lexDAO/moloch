@@ -22,7 +22,7 @@ contract Moloch is ReentrancyGuard {
     uint256 public summoningTime; // needed to determine the current period
 
     address public depositToken; // deposit token contract reference; default = wETH
-    address public wETH = 0xc778417E063141139Fce010982780140Aa0cD5Ab; // wrapping contract for raw payable ether
+    address public wETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // wrapping contract for raw payable ether
 
     // HARD-CODED LIMITS
     // These numbers are quite arbitrary; they are small enough to avoid overflows when doing calculations
@@ -176,7 +176,6 @@ contract Moloch is ReentrancyGuard {
         summoningTermination = _summoningTermination;
         summoningTime = now;
         totalShares = _summoners.length.mul(_summonerStake);
-        require(totalShares <= MAX_INPUT, "shares maxed");
     }
 
     function makeSummoningTribute(uint256 tribute) payable public {
