@@ -148,8 +148,8 @@ contract Moloch is ReentrancyGuard {
         depositToken = _approvedTokens[0];
         
         if (_summoningDeposit > 0) {
-            unsafeAddToBalance(GUILD, depositToken, _summoningDeposit);
             totalGuildBankTokens += 1;
+            unsafeAddToBalance(GUILD, depositToken, _summoningDeposit);
         }
         
         // NOTE: move event up here, avoid stack too deep if too many approved tokens
@@ -159,6 +159,9 @@ contract Moloch is ReentrancyGuard {
             members[_summoners[i]] = Member(_summoners[i], _summonerStake, 0, true, 0, 0);
             memberAddressByDelegateKey[_summoners[i]] = _summoners[i];
         }
+        
+        totalShares = _summoners.length * _summonerStake;
+        require(totalShares <= MAX_INPUT, "shares maxed");
 
         for (uint256 i = 0; i < _approvedTokens.length; i++) {
             require(!tokenWhitelist[_approvedTokens[i]], "token duplicated");
@@ -175,8 +178,6 @@ contract Moloch is ReentrancyGuard {
         summoningRate = _summoningRate;
         summoningTermination = _summoningTermination;
         summoningTime = now;
-        totalShares = _summoners.length * _summonerStake;
-        require(totalShares <= MAX_INPUT, "shares maxed");
     }
 
     function makeSummoningTribute(uint256 tribute) payable public {
