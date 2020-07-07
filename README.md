@@ -7,13 +7,13 @@
 * **Summoning _Circle** 🔥 👹 🔥
 > Summoning Circle / [array] / votes in other members / decides fair shares going fwd
 
-* **_Deposit** 🔥 💰 🔥
+* **_Deposit** 💰 
 > Moloch Summoner can forward `depositToken` sum into new DAO / Summoners can be credited a starting `summonerStake` 
 
-* **_Sale** 💰 ⌛ 💰
+* **_Sale** ⌛ 
 > Summoning Circle can buy votes at `summoningRate` w/ `depositToken` tribute before `summoningTermination` period
 
-* **_Minion** 🕯️ 👺 🕯️
+* **_Minion** 👺
 > `Moloch` w/ `Minion` summoned that allows execution of arbitrary calls voted on by members 
 
 ***misc:***
