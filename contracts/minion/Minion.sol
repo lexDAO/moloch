@@ -23,16 +23,16 @@ contract Minion {
         molochDepositToken = _molochDepositToken;
     }
 
-    function doWithdraw(address token, uint256 amount) public {
+    function doWithdraw(address token, uint256 amount) external {
         moloch.withdrawBalance(token, amount); // withdraw funds from parent moloch
     }
 
     function proposeAction(
         address actionTo,
         uint256 actionValue,
-        bytes memory actionData,
+        bytes calldata actionData,
         bytes32 details
-    ) public returns (uint256) {
+    ) external returns (uint256) {
         // No calls to zero address allows us to check that minion submitted
         // the proposal without getting the proposal struct from parent moloch
         require(actionTo != address(0), "invalid actionTo");
@@ -62,7 +62,7 @@ contract Minion {
         return proposalId;
     }
 
-    function executeAction(uint256 proposalId) public returns (bytes memory) {
+    function executeAction(uint256 proposalId) external returns (bytes memory) {
         Action memory action = actions[proposalId];
         bool[6] memory flags = moloch.getProposalFlags(proposalId);
 
