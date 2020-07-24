@@ -20,7 +20,8 @@ contract Moloch is ReentrancyGuard {
     uint256 public summoningRate; // rate to convert into shares during summoning time (default = 1000000000000000000 wei amt. // 1 wETH => 1 share)
     uint256 public summoningTermination; // termination time for summoning tribute in moloch periods
     uint256 public summoningTime; // needed to determine the current period
-
+    
+    address private bank = address(this);
     address public depositToken; // deposit token contract reference; default = wETH
     address public wETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // wrapping contract for raw payable ether
 
@@ -34,8 +35,8 @@ contract Moloch is ReentrancyGuard {
     // ***************
     // EVENTS
     // ***************
-    event SummonComplete(address[] indexed summoners, address[] tokens, uint256 summoningTime, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 proposalDeposit, uint256 dilutionBound, uint256 processingReward, uint256 summonerStake, uint256 summoningDeposit, uint256 summoningRate, uint256 summoningTermination);
     event MakeSummoningTribute(address indexed memberAddress, uint256 indexed tribute, uint256 indexed shares);
+    event MakeGuildPayment(address indexed caller, address indexed paymentToken, uint256 indexed payment, bytes32 details);
     event SubmitProposal(address indexed applicant, uint256 sharesRequested, uint256 lootRequested, uint256 tributeOffered, address tributeToken, uint256 paymentRequested, address paymentToken, bytes32 details, bool[6] flags, uint256 proposalId, address indexed delegateKey, address indexed memberAddress);
     event SponsorProposal(address indexed delegateKey, address indexed memberAddress, uint256 proposalId, uint256 proposalIndex, uint256 startingPeriod);
     event SubmitVote(uint256 proposalId, uint256 indexed proposalIndex, address indexed delegateKey, address indexed memberAddress, uint8 uintVote);
@@ -128,47 +129,44 @@ contract Moloch is ReentrancyGuard {
     ******************/
     constructor(
         address[] memory _summoners,
-        address[] memory _approvedTokens,
+        address _depositToken,
         uint256 _periodDuration,
         uint256 _votingPeriodLength,
         uint256 _gracePeriodLength,
         uint256 _proposalDeposit,
         uint256 _dilutionBound,
         uint256 _processingReward,
-        uint256 _summonerStake,
+        uint256[] memory _summonerShares,
         uint256 _summoningDeposit,
         uint256 _summoningRate,
         uint256 _summoningTermination
     ) public {
+        require(_periodDuration > 0, "_periodDuration zeroed");
+        require(_votingPeriodLength > 0, "_votingPeriodLength zeroed");
         require(_votingPeriodLength <= MAX_INPUT, "_votingPeriodLength maxed");
         require(_gracePeriodLength <= MAX_INPUT, "_gracePeriodLength maxed");
+        require(_dilutionBound > 0, "_dilutionBound zeroed");
         require(_dilutionBound <= MAX_INPUT, "_dilutionBound maxed");
-        require(_approvedTokens.length <= MAX_TOKEN_WHITELIST_COUNT, "tokens maxed");
-        
-        depositToken = _approvedTokens[0];
+        require(_proposalDeposit >= _processingReward, "_processingReward exceeds _proposalDeposit");
+
+        depositToken = _depositToken;
         
         if (_summoningDeposit > 0) {
             totalGuildBankTokens += 1;
-            unsafeAddToBalance(GUILD, depositToken, _summoningDeposit);
+            unsafeAddToBalance(GUILD, _depositToken, _summoningDeposit);
         }
-        
-        // NOTE: move event up here, avoid stack too deep if too many approved tokens
-        emit SummonComplete(_summoners, _approvedTokens, now, _periodDuration, _votingPeriodLength, _gracePeriodLength, _proposalDeposit, _dilutionBound, _processingReward, _summonerStake, _summoningDeposit, _summoningRate, _summoningTermination);
         
         for (uint256 i = 0; i < _summoners.length; i++) {
-            members[_summoners[i]] = Member(_summoners[i], _summonerStake, 0, true, 0, 0);
+            members[_summoners[i]] = Member(_summoners[i], _summonerShares[i], 0, true, 0, 0);
             memberAddressByDelegateKey[_summoners[i]] = _summoners[i];
+            totalShares = totalShares + _summonerShares[i];
         }
         
-        totalShares = _summoners.length * _summonerStake;
         require(totalShares <= MAX_INPUT, "shares maxed");
-
-        for (uint256 i = 0; i < _approvedTokens.length; i++) {
-            require(!tokenWhitelist[_approvedTokens[i]], "token duplicated");
-            tokenWhitelist[_approvedTokens[i]] = true;
-            approvedTokens.push(_approvedTokens[i]);
-        }
         
+        tokenWhitelist[_depositToken] = true;
+        approvedTokens.push(_depositToken);
+
         periodDuration = _periodDuration;
         votingPeriodLength = _votingPeriodLength;
         gracePeriodLength = _gracePeriodLength;
@@ -180,7 +178,7 @@ contract Moloch is ReentrancyGuard {
         summoningTime = now;
     }
 
-    function makeSummoningTribute(uint256 tribute) payable public {
+    function makeSummoningTribute(uint256 tribute) payable external {
         require(members[msg.sender].exists == true, "not member");
         require(getCurrentPeriod() <= summoningTermination, "summoning period over");        
         require(tribute >= summoningRate, "tribute insufficient");
@@ -190,9 +188,9 @@ contract Moloch is ReentrancyGuard {
             IWETH(wETH).deposit();
             (bool success, ) = wETH.call.value(msg.value)("");
             require(success, "transfer failed");
-            IWETH(wETH).transfer(address(this), msg.value);
+            IWETH(wETH).transfer(bank, msg.value);
         } else {
-            require(IERC20(depositToken).transferFrom(msg.sender, address(this), tribute), "transfer failed");
+            require(IERC20(depositToken).transferFrom(msg.sender, bank, tribute), "transfer failed");
         }
         
         if (userTokenBalances[GUILD][depositToken] == 0) {totalGuildBankTokens += 1;}
@@ -206,14 +204,16 @@ contract Moloch is ReentrancyGuard {
         emit MakeSummoningTribute(msg.sender, tribute, shares);
     }
     
-    function makePayment(address paymentToken, uint256 payment) public {
+    function makeGuildPayment(address paymentToken, uint256 payment, bytes32 details) external {
         require(tokenWhitelist[paymentToken], "paymentToken not whitelisted");
-        require(IERC20(paymentToken).transferFrom(msg.sender, address(this), payment), "transfer failed");
-        
+        require(IERC20(paymentToken).transferFrom(msg.sender, bank, payment), "transfer failed");
+
         if (userTokenBalances[GUILD][paymentToken] == 0) {totalGuildBankTokens += 1;}
         unsafeAddToBalance(GUILD, paymentToken, payment);
+        
+        emit MakeGuildPayment(msg.sender, paymentToken, payment, details);
     }
-    
+
     /*****************
     PROPOSAL FUNCTIONS
     *****************/
@@ -226,7 +226,7 @@ contract Moloch is ReentrancyGuard {
         uint256 paymentRequested,
         address paymentToken,
         bytes32 details
-    ) payable public nonReentrant returns (uint256 proposalId) {
+    ) payable external nonReentrant returns (uint256 proposalId) {
         require(sharesRequested.add(lootRequested) <= MAX_INPUT, "shares maxed");
         require(tokenWhitelist[tributeToken], "tributeToken not whitelisted");
         require(tokenWhitelist[paymentToken], "paymentToken not whitelisted");
@@ -244,9 +244,9 @@ contract Moloch is ReentrancyGuard {
             IWETH(wETH).deposit();
             (bool success, ) = wETH.call.value(msg.value)("");
             require(success, "transfer failed");
-            IWETH(wETH).transfer(address(this), msg.value);
+            IWETH(wETH).transfer(bank, msg.value);
         } else {
-            require(IERC20(tributeToken).transferFrom(msg.sender, address(this), tributeOffered), "transfer failed");
+            require(IERC20(tributeToken).transferFrom(msg.sender, bank, tributeOffered), "transfer failed");
         }
         
         unsafeAddToBalance(ESCROW, tributeToken, tributeOffered);
@@ -257,7 +257,7 @@ contract Moloch is ReentrancyGuard {
         return proposalCount - 1; // return proposalId - contracts calling submit might want it
     }
 
-    function submitWhitelistProposal(address tokenToWhitelist, bytes32 details) public nonReentrant returns (uint256 proposalId) {
+    function submitWhitelistProposal(address tokenToWhitelist, bytes32 details) external nonReentrant returns (uint256 proposalId) {
         require(tokenToWhitelist != address(0), "need token");
         require(!tokenWhitelist[tokenToWhitelist], "already whitelisted");
         require(approvedTokens.length < MAX_TOKEN_WHITELIST_COUNT, "whitelist maxed");
@@ -269,7 +269,7 @@ contract Moloch is ReentrancyGuard {
         return proposalCount - 1;
     }
 
-    function submitGuildKickProposal(address memberToKick, bytes32 details) public nonReentrant returns (uint256 proposalId) {
+    function submitGuildKickProposal(address memberToKick, bytes32 details) external nonReentrant returns (uint256 proposalId) {
         Member memory member = members[memberToKick];
 
         require(member.shares > 0 || member.loot > 0, "must have share or loot");
@@ -318,9 +318,9 @@ contract Moloch is ReentrancyGuard {
         proposalCount += 1;
     }
 
-    function sponsorProposal(uint256 proposalId) public nonReentrant onlyDelegate {
+    function sponsorProposal(uint256 proposalId) external nonReentrant onlyDelegate {
         // collect proposal deposit from sponsor and store it in the Moloch until the proposal is processed
-        require(IERC20(depositToken).transferFrom(msg.sender, address(this), proposalDeposit), "deposit failed");
+        require(IERC20(depositToken).transferFrom(msg.sender, bank, proposalDeposit), "deposit failed");
         unsafeAddToBalance(ESCROW, depositToken, proposalDeposit);
 
         Proposal storage proposal = proposals[proposalId];
@@ -367,7 +367,7 @@ contract Moloch is ReentrancyGuard {
     }
 
     // NOTE: In MolochV2 proposalIndex !== proposalId
-    function submitVote(uint256 proposalIndex, uint8 uintVote) public nonReentrant onlyDelegate {
+    function submitVote(uint256 proposalIndex, uint8 uintVote) external nonReentrant onlyDelegate {
         address memberAddress = memberAddressByDelegateKey[msg.sender];
         Member storage member = members[memberAddress];
 
@@ -405,7 +405,7 @@ contract Moloch is ReentrancyGuard {
         emit SubmitVote(proposalQueue[proposalIndex], proposalIndex, msg.sender, memberAddress, uintVote);
     }
 
-    function processProposal(uint256 proposalIndex) public nonReentrant {
+    function processProposal(uint256 proposalIndex) external nonReentrant {
         _validateProposalForProcessing(proposalIndex);
 
         uint256 proposalId = proposalQueue[proposalIndex];
@@ -483,7 +483,7 @@ contract Moloch is ReentrancyGuard {
         emit ProcessProposal(proposalIndex, proposalId, didPass);
     }
 
-    function processWhitelistProposal(uint256 proposalIndex) public nonReentrant {
+    function processWhitelistProposal(uint256 proposalIndex) external nonReentrant {
         _validateProposalForProcessing(proposalIndex);
 
         uint256 proposalId = proposalQueue[proposalIndex];
@@ -513,7 +513,7 @@ contract Moloch is ReentrancyGuard {
         emit ProcessWhitelistProposal(proposalIndex, proposalId, didPass);
     }
 
-    function processGuildKickProposal(uint256 proposalIndex) public nonReentrant {
+    function processGuildKickProposal(uint256 proposalIndex) external nonReentrant {
         _validateProposalForProcessing(proposalIndex);
 
         uint256 proposalId = proposalQueue[proposalIndex];
@@ -578,7 +578,7 @@ contract Moloch is ReentrancyGuard {
         unsafeInternalTransfer(ESCROW, sponsor, depositToken, proposalDeposit.sub(processingReward));
     }
 
-    function ragequit(uint256 sharesToBurn, uint256 lootToBurn) public nonReentrant onlyMember {
+    function ragequit(uint256 sharesToBurn, uint256 lootToBurn) external nonReentrant onlyMember {
         _ragequit(msg.sender, sharesToBurn, lootToBurn);
     }
 
@@ -613,7 +613,7 @@ contract Moloch is ReentrancyGuard {
         emit Ragequit(msg.sender, sharesToBurn, lootToBurn);
     }
 
-    function ragekick(address memberToKick) public nonReentrant {
+    function ragekick(address memberToKick) external nonReentrant {
         Member storage member = members[memberToKick];
 
         require(member.jailed != 0, "member not jailed");
@@ -623,11 +623,11 @@ contract Moloch is ReentrancyGuard {
         _ragequit(memberToKick, 0, member.loot);
     }
 
-    function withdrawBalance(address token, uint256 amount) public nonReentrant {
+    function withdrawBalance(address token, uint256 amount) external nonReentrant {
         _withdrawBalance(token, amount);
     }
 
-    function withdrawBalances(address[] memory tokens, uint256[] memory amounts, bool max) public nonReentrant {
+    function withdrawBalances(address[] calldata tokens, uint256[] calldata amounts, bool max) external nonReentrant {
         require(tokens.length == amounts.length, "tokens + amounts arrays must match");
 
         for (uint256 i=0; i < tokens.length; i++) {
@@ -647,8 +647,8 @@ contract Moloch is ReentrancyGuard {
         emit Withdraw(msg.sender, token, amount);
     }
 
-    function collectTokens(address token) public nonReentrant onlyDelegate {
-        uint256 amountToCollect = IERC20(token).balanceOf(address(this)).sub(userTokenBalances[TOTAL][token]);
+    function collectTokens(address token) external nonReentrant onlyDelegate {
+        uint256 amountToCollect = IERC20(token).balanceOf(bank).sub(userTokenBalances[TOTAL][token]);
         // only collect if 1) there are tokens to collect 2) token is whitelisted 3) token has non-zero balance
         require(amountToCollect > 0, "no tokens");
         require(tokenWhitelist[token], "not whitelisted");
@@ -659,7 +659,7 @@ contract Moloch is ReentrancyGuard {
     }
 
     // NOTE: requires that delegate key which sent the original proposal cancels, msg.sender == proposal.proposer
-    function cancelProposal(uint256 proposalId) public nonReentrant {
+    function cancelProposal(uint256 proposalId) external nonReentrant {
         Proposal storage proposal = proposals[proposalId];
         require(!proposal.flags[0], "proposal already sponsored");
         require(!proposal.flags[3], "proposal already cancelled");
@@ -671,7 +671,7 @@ contract Moloch is ReentrancyGuard {
         emit CancelProposal(proposalId, msg.sender);
     }
 
-    function updateDelegateKey(address newDelegateKey) public nonReentrant onlyShareholder {
+    function updateDelegateKey(address newDelegateKey) external nonReentrant onlyShareholder {
         require(newDelegateKey != address(0), "newDelegateKey zeroed");
 
         // skip checks if member is setting the delegate key to their member address
