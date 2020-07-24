@@ -15,13 +15,13 @@ contract MinionSummoner {
         status = NOT_SET;
     }
 
-    function setMolochSummoner(address _molochSummoner) public {
+    function setMolochSummoner(address _molochSummoner) external {
         require(status != SET, "already set");
         molochSummoner = _molochSummoner;
         status = SET; // lock minionSummoner to molochSummoner
     }
 
-    function summonMinion(address _moloch, address _molochDepositToken) public {
+    function summonMinion(address _moloch, address _molochDepositToken) external {
         require(msg.sender == molochSummoner, "not molochSummoner");
         minion = new Minion(_moloch, _molochDepositToken); // summon minion for parent moloch
         
