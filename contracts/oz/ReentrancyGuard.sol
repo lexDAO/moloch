@@ -1,6 +1,6 @@
 pragma solidity 0.5.17;
 
-contract ReentrancyGuard {
+contract ReentrancyGuard { // contract module that helps prevent reentrant calls to a function
     uint256 private constant _NOT_ENTERED = 1;
     uint256 private constant _ENTERED = 2;
 
