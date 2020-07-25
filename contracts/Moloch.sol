@@ -27,7 +27,7 @@ contract Moloch is ReentrancyGuard {
     
     // MEMBER TOKEN DETAILS
     string public symbol = "MOL-V2X";
-    string public  name = "MOLOCH DAO V2X";
+    string public name = "MOLOCH DAO V2X";
     uint8 public decimals = 18;
 
     // HARD-CODED LIMITS
