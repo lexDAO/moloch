@@ -17,7 +17,7 @@ contract Moloch is ReentrancyGuard {
     uint256 public proposalDeposit; // default = 10 ETH (~$1,000 worth of ETH at contract deployment)
     uint256 public dilutionBound; // default = 3 - maximum multiplier a YES voter will be obligated to pay in case of mass ragequit
     uint256 public processingReward; // default = 0.1 - amount of ETH to give to whoever processes a proposal
-    uint256 public summoningRate; // rate for members to convert tribute into shares before summoning termination (default = 1000000000000000000 wei amt. // 1 wETH => 1 share)
+    uint256 public summoningRate; // rate for members to convert tribute into shares before summoning termination (default = 10 ~ 1 wETH => 10 shares)
     uint256 public summoningTermination; // termination time for summoning tribute in moloch periods
     uint256 public summoningTime; // needed to determine the current period
     
@@ -25,9 +25,9 @@ contract Moloch is ReentrancyGuard {
     address public depositToken; // deposit token contract reference; default = wETH
     address public wETH = 0xc778417E063141139Fce010982780140Aa0cD5Ab; // wrapping contract for raw payable ether
     
-    // MEMBER TOKEN DETAILS
+    // BANK TOKEN DETAILS
     string public symbol = "MOL-V2X";
-    string public name = "MOLOCH DAO V2X";
+    string public name = "Moloch DAO v2x GuildBank";
     uint8 public decimals = 18;
 
     // HARD-CODED LIMITS
@@ -64,7 +64,7 @@ contract Moloch is ReentrancyGuard {
     address public constant GUILD = address(0xdead);
     address public constant ESCROW = address(0xbeef);
     address public constant TOTAL = address(0xbabe);
-    mapping(address => uint256) private balances; // guild voting share token balances
+    mapping(address => uint256) private balances; // guildbank token balances
     mapping(address => mapping(address => uint256)) public userTokenBalances; // userTokenBalances[userAddress][tokenAddress]
 
     enum Vote {
@@ -193,7 +193,7 @@ contract Moloch is ReentrancyGuard {
         if (userTokenBalances[GUILD][depositToken] == 0) {totalGuildBankTokens += 1;}
         unsafeAddToBalance(GUILD, depositToken, tribute);
         
-        uint256 shares = tribute.div(summoningRate);
+        uint256 shares = tribute.mul(summoningRate);
         members[msg.sender].shares = members[msg.sender].shares.add(shares);
         totalShares = totalShares.add(shares);
         require(totalShares <= MAX_BOUND, "member maxed");
