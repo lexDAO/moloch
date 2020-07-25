@@ -690,72 +690,47 @@ contract Moloch is ReentrancyGuard {
     /***************
     GETTER FUNCTIONS
     ***************/
+    function balanceOf(address memberAddress) public view returns (uint256) { // tracks tokenized share balances
+        return balances[memberAddress];
+    }
+    
     function max(uint256 x, uint256 y) internal pure returns (uint256) {
         return x >= y ? x : y;
     }
-
+    
+    function totalSupply() public view returns (uint256) { // tracks tokenized share totaly supply
+        return totalShares.add(totalLoot);
+    }
+    
     function getCurrentPeriod() public view returns (uint256) {
         return now.sub(summoningTime).div(periodDuration);
     }
-
-    function getProposalQueueLength() public view returns (uint256) {
-        return proposalQueue.length;
-    }
-
-    function getProposalFlags(uint256 proposalId) public view returns (bool[6] memory) {
-        return proposals[proposalId].flags;
-    }
-
-    function getUserTokenBalance(address user, address token) public view returns (uint256) {
-        return userTokenBalances[user][token];
-    }
-
+    
     function getMemberProposalVote(address memberAddress, uint256 proposalIndex) public view returns (Vote) {
         require(members[memberAddress].exists, "no such member");
         require(proposalIndex < proposalQueue.length, "unproposed");
         return proposals[proposalQueue[proposalIndex]].votesByMember[memberAddress];
     }
 
+    function getProposalFlags(uint256 proposalId) public view returns (bool[6] memory) {
+        return proposals[proposalId].flags;
+    }
+    
+    function getProposalQueueLength() public view returns (uint256) {
+        return proposalQueue.length;
+    }
+    
     function getTokenCount() public view returns (uint256) {
         return approvedTokens.length;
     }
-    
-    function balanceOf(address memberAddress) public view returns (uint256) { // tracks tokenized share balances
-        return balances[memberAddress];
-    }
-    
-    function totalSupply() public view returns (uint256) { // tracks tokenized share totaly supply
-        return totalShares.add(totalLoot);
+
+    function getUserTokenBalance(address user, address token) public view returns (uint256) {
+        return userTokenBalances[user][token];
     }
 
     /***************
     HELPER FUNCTIONS
     ***************/
-    function mintGuildToken(address memberAddress, uint256 amount) internal {
-        balances[memberAddress] += amount;
-        emit Transfer(address(0), memberAddress, amount);
-    }
-    
-    function burnGuildToken(address memberAddress, uint256 amount) internal {
-        balances[memberAddress] -= amount;
-        emit Transfer(memberAddress, address(0), amount);
-    }
-    
-    function unsafeAddToBalance(address user, address token, uint256 amount) internal {
-        userTokenBalances[user][token] += amount;
-        userTokenBalances[TOTAL][token] += amount;
-    }
-
-    function unsafeSubtractFromBalance(address user, address token, uint256 amount) internal {
-        userTokenBalances[user][token] -= amount;
-        userTokenBalances[TOTAL][token] -= amount;
-    }
-
-    function unsafeInternalTransfer(address from, address to, address token, uint256 amount) internal {
-        unsafeSubtractFromBalance(from, token, amount);
-        unsafeAddToBalance(to, token, amount);
-    }
-
     function fairShare(uint256 balance, uint256 shares, uint256 totalSharesAndLoot) internal pure returns (uint256) {
         require(totalSharesAndLoot != 0);
 
@@ -768,5 +743,30 @@ contract Moloch is ReentrancyGuard {
         }
 
         return (balance / totalSharesAndLoot) * shares;
-    }  
+    }
+    
+    function burnGuildToken(address memberAddress, uint256 amount) internal {
+        balances[memberAddress] -= amount;
+        emit Transfer(memberAddress, address(0), amount);
+    }
+    
+    function mintGuildToken(address memberAddress, uint256 amount) internal {
+        balances[memberAddress] += amount;
+        emit Transfer(address(0), memberAddress, amount);
+    }
+    
+    function unsafeAddToBalance(address user, address token, uint256 amount) internal {
+        userTokenBalances[user][token] += amount;
+        userTokenBalances[TOTAL][token] += amount;
+    }
+    
+    function unsafeInternalTransfer(address from, address to, address token, uint256 amount) internal {
+        unsafeSubtractFromBalance(from, token, amount);
+        unsafeAddToBalance(to, token, amount);
+    }
+
+    function unsafeSubtractFromBalance(address user, address token, uint256 amount) internal {
+        userTokenBalances[user][token] -= amount;
+        userTokenBalances[TOTAL][token] -= amount;
+    }
 }
