@@ -17,18 +17,24 @@ contract Moloch is ReentrancyGuard {
     uint256 public proposalDeposit; // default = 10 ETH (~$1,000 worth of ETH at contract deployment)
     uint256 public dilutionBound; // default = 3 - maximum multiplier a YES voter will be obligated to pay in case of mass ragequit
     uint256 public processingReward; // default = 0.1 - amount of ETH to give to whoever processes a proposal
-    uint256 public summoningRate; // rate for members to convert tribute into shares before summoning termination (default = 100000000000000000 wei amt. // 1 wETH => 10 shares)
+    uint256 public summoningRate; // rate for members to convert tribute into shares before summoning termination 
     uint256 public summoningTermination; // termination time for summoning tribute in moloch periods
     uint256 public summoningTime; // needed to determine the current period
     
     address private bank = address(this);
     address public depositToken; // deposit token contract reference; default = wETH
-    address public wETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // wrapping contract for raw payable ether
+    address public wETH = 0xc778417E063141139Fce010982780140Aa0cD5Ab; // wrapping contract for raw payable ether
+    
+    // MEMBER TOKEN DETAILS
+    string public symbol = "MOL-V2X";
+    string public  name = "MOLOCH DAO V2X";
+    uint8 public decimals = 18;
 
     // HARD-CODED LIMITS
     // These numbers are quite arbitrary; they are small enough to avoid overflows when doing calculations
     // with periods or shares, yet big enough to not limit reasonable use cases.
-    uint256 constant MAX_INPUT = 10**18; // maximum bound for reasonable limits
+    uint256 constant MAX_BOUND = 10**18; // maximum bound for reasonable limits
+    uint256 constant MAX_SHARES = (10**18)*(10**18); // maximum bound for tokenized shares (18 decimal default)
     uint256 constant MAX_TOKEN_WHITELIST_COUNT = 400; // maximum number of whitelisted tokens
     uint256 constant MAX_TOKEN_GUILDBANK_COUNT = 200; // maximum number of tokens with non-zero balance in guildbank
 
@@ -48,18 +54,20 @@ contract Moloch is ReentrancyGuard {
     event CancelProposal(uint256 indexed proposalId, address applicantAddress);
     event UpdateDelegateKey(address indexed memberAddress, address newDelegateKey);
     event Withdraw(address indexed memberAddress, address token, uint256 amount);
+    event Transfer(address indexed from, address indexed to, uint256 shares);
 
     // *******************
     // INTERNAL ACCOUNTING
     // *******************
     uint256 public proposalCount; // total proposals submitted
-    uint256 public totalShares; // total shares across all members
+    uint256 private totalShares; // total tokenized shares across all members
     uint256 public totalLoot; // total loot across all members
     uint256 public totalGuildBankTokens; // total tokens with non-zero balance in guild bank
 
     address public constant GUILD = address(0xdead);
     address public constant ESCROW = address(0xbeef);
     address public constant TOTAL = address(0xbabe);
+    mapping(address => uint256) private balances; // guild voting share token balances
     mapping(address => mapping(address => uint256)) public userTokenBalances; // userTokenBalances[userAddress][tokenAddress]
 
     enum Vote {
@@ -101,10 +109,10 @@ contract Moloch is ReentrancyGuard {
 
     mapping(address => bool) public proposedToWhitelist;
     mapping(address => bool) public proposedToKick;
-
+    
     mapping(address => Member) public members;
     mapping(address => address) public memberAddressByDelegateKey;
-
+    
     mapping(uint256 => Proposal) public proposals;
 
     uint256[] public proposalQueue;
@@ -143,10 +151,10 @@ contract Moloch is ReentrancyGuard {
     ) public {
         require(_periodDuration > 0, "_periodDuration zeroed");
         require(_votingPeriodLength > 0, "_votingPeriodLength zeroed");
-        require(_votingPeriodLength <= MAX_INPUT, "_votingPeriodLength maxed");
-        require(_gracePeriodLength <= MAX_INPUT, "_gracePeriodLength maxed");
+        require(_votingPeriodLength <= MAX_BOUND, "_votingPeriodLength maxed");
+        require(_gracePeriodLength <= MAX_BOUND, "_gracePeriodLength maxed");
         require(_dilutionBound > 0, "_dilutionBound zeroed");
-        require(_dilutionBound <= MAX_INPUT, "_dilutionBound maxed");
+        require(_dilutionBound <= MAX_BOUND, "_dilutionBound maxed");
         require(_proposalDeposit >= _processingReward, "_processingReward exceeds _proposalDeposit");
 
         depositToken = _depositToken;
@@ -159,14 +167,12 @@ contract Moloch is ReentrancyGuard {
         for (uint256 i = 0; i < _summoners.length; i++) {
             members[_summoners[i]] = Member(_summoners[i], _summonerShares[i], 0, true, 0, 0);
             memberAddressByDelegateKey[_summoners[i]] = _summoners[i];
-            totalShares = totalShares + _summonerShares[i];
+            mintGuildShares(_summoners[i], _summonerShares[i]);
         }
-        
-        require(totalShares <= MAX_INPUT, "shares maxed");
         
         tokenWhitelist[_depositToken] = true;
         approvedTokens.push(_depositToken);
-
+        
         periodDuration = _periodDuration;
         votingPeriodLength = _votingPeriodLength;
         gracePeriodLength = _gracePeriodLength;
@@ -197,10 +203,8 @@ contract Moloch is ReentrancyGuard {
         unsafeAddToBalance(GUILD, depositToken, tribute);
         
         uint256 shares = tribute.div(summoningRate);
-        require(totalShares + shares <= MAX_INPUT, "shares maxed");
-        members[msg.sender].shares += shares;
-        totalShares += shares;
-
+        mintGuildShares(msg.sender, shares);
+        
         emit MakeSummoningTribute(msg.sender, tribute, shares);
     }
     
@@ -227,7 +231,7 @@ contract Moloch is ReentrancyGuard {
         address paymentToken,
         bytes32 details
     ) payable external nonReentrant returns (uint256 proposalId) {
-        require(sharesRequested.add(lootRequested) <= MAX_INPUT, "shares maxed");
+        require(sharesRequested.add(lootRequested) <= MAX_BOUND, "shares maxed");
         require(tokenWhitelist[tributeToken], "tributeToken not whitelisted");
         require(tokenWhitelist[paymentToken], "paymentToken not whitelisted");
         require(applicant != address(0), "applicant zeroed");
@@ -418,7 +422,7 @@ contract Moloch is ReentrancyGuard {
         bool didPass = _didPass(proposalIndex);
 
         // Make the proposal fail if the new total number of shares and loot exceeds the limit
-        if (totalShares.add(totalLoot).add(proposal.sharesRequested).add(proposal.lootRequested) > MAX_INPUT) {
+        if (totalShares.add(totalLoot).add(proposal.sharesRequested).add(proposal.lootRequested) > MAX_BOUND) {
             didPass = false;
         }
 
@@ -438,7 +442,7 @@ contract Moloch is ReentrancyGuard {
 
             // if the applicant is already a member, add to their existing shares & loot
             if (members[proposal.applicant].exists) {
-                members[proposal.applicant].shares = members[proposal.applicant].shares.add(proposal.sharesRequested);
+                mintGuildShares(proposal.applicant, proposal.sharesRequested);
                 members[proposal.applicant].loot = members[proposal.applicant].loot.add(proposal.lootRequested);
 
             // the applicant is a new member, create a new record for them
@@ -453,10 +457,9 @@ contract Moloch is ReentrancyGuard {
                 // use applicant address as delegateKey by default
                 members[proposal.applicant] = Member(proposal.applicant, proposal.sharesRequested, proposal.lootRequested, true, 0, 0);
                 memberAddressByDelegateKey[proposal.applicant] = proposal.applicant;
+                mintGuildShares(proposal.applicant, proposal.sharesRequested);
             }
 
-            // mint new shares & loot
-            totalShares = totalShares.add(proposal.sharesRequested);
             totalLoot = totalLoot.add(proposal.lootRequested);
 
             // if the proposal tribute is the first tokens of its kind to make it into the guild bank, increment total guild bank tokens
@@ -595,9 +598,8 @@ contract Moloch is ReentrancyGuard {
         uint256 sharesAndLootToBurn = sharesToBurn.add(lootToBurn);
 
         // burn shares and loot
-        member.shares = member.shares.sub(sharesToBurn);
+        burnGuildShares(memberAddress, sharesToBurn);
         member.loot = member.loot.sub(lootToBurn);
-        totalShares = totalShares.sub(sharesToBurn);
         totalLoot = totalLoot.sub(lootToBurn);
 
         for (uint256 i = 0; i < approvedTokens.length; i++) {
@@ -730,10 +732,33 @@ contract Moloch is ReentrancyGuard {
     function getTokenCount() public view returns (uint256) {
         return approvedTokens.length;
     }
+    
+    function balanceOf(address memberAddress) public view returns (uint256) {
+        return balances[memberAddress];
+    }
+    
+    function totalSupply() public view returns (uint256) {
+        return totalShares - balances[address(0)];
+    }
 
     /***************
     HELPER FUNCTIONS
     ***************/
+    function mintGuildShares(address memberAddress, uint256 shares) internal {
+        balances[memberAddress] = balances[memberAddress].add(shares);
+        members[msg.sender].shares = members[msg.sender].shares.add(shares);
+        totalShares = totalShares.add(shares);
+        require(totalShares <= MAX_SHARES, "shares maxed");
+        emit Transfer(address(0), memberAddress, shares);
+    }
+    
+    function burnGuildShares(address memberAddress, uint256 shares) internal {
+        balances[memberAddress] = balances[memberAddress].sub(shares);
+        members[msg.sender].shares = members[msg.sender].shares.sub(shares);
+        totalShares = totalShares.sub(shares);
+        emit Transfer(memberAddress, address(0), shares);
+    }
+    
     function unsafeAddToBalance(address user, address token, uint256 amount) internal {
         userTokenBalances[user][token] += amount;
         userTokenBalances[TOTAL][token] += amount;
