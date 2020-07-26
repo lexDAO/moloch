@@ -8,7 +8,6 @@ contract MinionSummoner {
     event SummonMinion(address indexed minion, address indexed moloch);
 
     function summonMinion(address _moloch, address _molochDepositToken) external {
-        require(msg.sender == molochSummoner, "not molochSummoner");
         minion = new Minion(_moloch, _molochDepositToken); // summon minion for parent moloch
         
         emit SummonMinion(address(minion), _moloch);
