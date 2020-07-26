@@ -1,22 +1,22 @@
 # Moloch v2x:
 [![built-with openzeppelin](https://img.shields.io/badge/built%20with-OpenZeppelin-3677FF)](https://docs.openzeppelin.com/)
-> LexDAO upgrades MolochDAO 2 v3 *ish*
+> LexDAO upgrades MolochDAO 2 v3 *ish* 🧙
 
 - Kovan: [0xA6E55923E4e5c174Fa898B8d29B74E05aC282161](https://kovan.etherscan.io/address/0xA6E55923E4e5c174Fa898B8d29B74E05aC282161#code)
 - Rinkeby: [0x1E556Febc74248f5A2AF7Cf74aa121DEfB7f7Aa8](https://rinkeby.etherscan.io/address/0x1E556Febc74248f5A2AF7Cf74aa121DEfB7f7Aa8#code)
 
 ***2X UPGRADES INCLUDE:***
 
-* **Summoning Circle** 🔥 👹 🔥
+* **Summoning Circle** 🔥 👹👹👹 🔥
 > start membership with circle of summoners with unique shares/loot claimable against guild bank
 
 * **Presale Deposit** 💰 
 > presale summoning circle accounts / forward collected `depositToken` sum to back shares/loot in guild bank
 
-* **Guild Tokens** ⌛ 
+* **Guild Tokens** 🏵️ 
 > guild shares/loot are tokenized with basic ERC-20 interface (approve, transfer, transferFrom) / loot is freely transferable (members should respect guild/jxd rules)
 
-* **Ether contributions** ⌛ 
+* **Ether contributions** 🍬 
 > guild proposals can wrap raw Ether into tokenized wETH
 
 ***misc:***
