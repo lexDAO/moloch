@@ -8,30 +8,22 @@
 ***2X UPGRADES INCLUDE:***
 
 * **Summoning Circle** 🔥 👹 🔥
-> start membership with circle of summoners with respective shares/loot
+> start membership with circle of summoners with unique shares/loot claimable against guild bank
 
 * **Presale Deposit** 💰 
-> presale summoning circle / forward collected `depositToken` sum to back shares/loot 
+> presale summoning circle accounts / forward collected `depositToken` sum to back shares/loot in guild bank
 
 * **Guild Tokens** ⌛ 
-> Shares/Loot are tokenized with basic ERC-20 interface (approve, transfer, transferFrom). Loot is freely transferable. 
+> guild shares/loot are tokenized with basic ERC-20 interface (approve, transfer, transferFrom) / loot is freely transferable (members should respect guild/jxd rules)
 
 * **Ether contributions** ⌛ 
-> proposals can wrap raw Ether into tokenized wETH
+> guild proposals can wrap raw Ether into tokenized wETH
 
 ***misc:***
 * minion upgrades to conform to v2x 👺
 * most recent [OpenZeppelin contracts](https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/contracts) w/ trimmed comments / error msgs.
 * housekeeping updates to remove warnings: [PR](https://github.com/MolochVentures/moloch/pull/86)
 * gas/size savings measures / etc.
-
-These upgrades also reflect a 'more modular Moloch' design, using dual-summoning addresses to expand codebase executing votes.
-
-***try things out:*** 🧙 *2x BETA* / Summoning Circle Sale w/ Minion /
-
->[Mainnet Summoner](https://etherscan.io/address/0xbC0DebF459D6389599F193EaE6A7B22a67974020#code)
-
->[Rinkeby Summoner](https://rinkeby.etherscan.io/address/0xf4B4B807f1b9deC1E6D1590A2ff8A4EB0C4F3F16#code)
 
 STEAL THIS CODE
 
