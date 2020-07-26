@@ -2,24 +2,25 @@
 [![built-with openzeppelin](https://img.shields.io/badge/built%20with-OpenZeppelin-3677FF)](https://docs.openzeppelin.com/)
 > LexDAO upgrades MolochDAO 2 v3 *ish*
 
-- Kovan: [0x455CfAa64b706BC0534bd08B9570aE7CbDDd7a0F](https://kovan.etherscan.io/address/0x455CfAa64b706BC0534bd08B9570aE7CbDDd7a0F#code)
+- Kovan: [0xA6E55923E4e5c174Fa898B8d29B74E05aC282161](https://kovan.etherscan.io/address/0xA6E55923E4e5c174Fa898B8d29B74E05aC282161#code)
+- Rinkeby: [0x1E556Febc74248f5A2AF7Cf74aa121DEfB7f7Aa8](https://rinkeby.etherscan.io/address/0x1E556Febc74248f5A2AF7Cf74aa121DEfB7f7Aa8#code)
 
 ***2X UPGRADES INCLUDE:***
 
-* **Summoning _Circle** 🔥 👹 🔥
-> Summoning Circle / [array] / votes in other members / decides fair shares going fwd
+* **Summoning Circle** 🔥 👹 🔥
+> start membership with circle of summoners with respective shares/loot
 
-* **_Deposit** 💰 
-> Moloch Summoner can forward `depositToken` sum into new DAO / Summoners can be credited a starting `summonerStake` 
+* **Presale Deposit** 💰 
+> presale summoning circle / forward collected `depositToken` sum to back shares/loot 
 
-* **_Sale** ⌛ 
-> Summoning Circle can buy votes at `summoningRate` w/ `depositToken` tribute before `summoningTermination` period
+* **Guild Tokens** ⌛ 
+> Shares/Loot are tokenized with basic ERC-20 interface (approve, transfer, transferFrom). Loot is freely transferable. 
 
-* **_Minion** 👺
-> `Moloch` w/ `Minion` summoned that allows execution of arbitrary calls voted on by members 
+* **Ether contributions** ⌛ 
+> proposals can wrap raw Ether into tokenized wETH
 
 ***misc:***
-
+* minion upgrades to conform to v2x 👺
 * most recent [OpenZeppelin contracts](https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/contracts) w/ trimmed comments / error msgs.
 * housekeeping updates to remove warnings: [PR](https://github.com/MolochVentures/moloch/pull/86)
 * gas/size savings measures / etc.
