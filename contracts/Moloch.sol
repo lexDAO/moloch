@@ -17,8 +17,6 @@ contract Moloch is ReentrancyGuard {
     uint256 public proposalDeposit; // default = 10 ETH (~$1,000 worth of ETH at contract deployment)
     uint256 public dilutionBound; // default = 3 - maximum multiplier a YES voter will be obligated to pay in case of mass ragequit
     uint256 public processingReward; // default = 0.1 - amount of ETH to give to whoever processes a proposal
-    uint256 public summoningRate; // rate for members to convert tribute into shares before summoning termination (default = 10 ~ 1 wETH => 10 shares)
-    uint256 public summoningTermination; // termination time for summoning tribute in moloch periods
     uint256 public summoningTime; // needed to determine the current period
     
     address private bank = address(this);
@@ -27,13 +25,13 @@ contract Moloch is ReentrancyGuard {
     
     // BANK TOKEN DETAILS
     string public symbol = "MOL-V2X";
-    string public name = "Moloch DAO v2x GuildBank";
+    string public name = "Moloch DAO v2x Bank";
     uint8 public decimals = 18;
 
     // HARD-CODED LIMITS
     // These numbers are quite arbitrary; they are small enough to avoid overflows when doing calculations
     // with periods or shares, yet big enough to not limit reasonable use cases.
-    uint256 constant MAX_BOUND = (10**18)*(10**18); // maximum bound for guild shares / loot (reflects 18 decimal default)
+    uint256 constant MAX_GUILD_BOUND = (10**18)*(10**18); // maximum bound for guild shares / loot (reflects 18 decimal default)
     uint256 constant MAX_TOKEN_WHITELIST_COUNT = 400; // maximum number of whitelisted tokens
     uint256 constant MAX_TOKEN_GUILDBANK_COUNT = 200; // maximum number of tokens with non-zero balance in guildbank
 
@@ -51,21 +49,23 @@ contract Moloch is ReentrancyGuard {
     event CancelProposal(uint256 indexed proposalId, address applicantAddress);
     event UpdateDelegateKey(address indexed memberAddress, address newDelegateKey);
     event Withdraw(address indexed memberAddress, address token, uint256 amount);
-    event Transfer(address indexed from, address indexed to, uint256 shares); // token event tracking
+    event Approval(address indexed owner, address indexed spender, uint256 amount);
+    event Transfer(address indexed from, address indexed to, uint256 amount); // token event tracking
 
     // *******************
     // INTERNAL ACCOUNTING
     // *******************
     uint256 public proposalCount; // total proposals submitted
-    uint256 public totalShares; // total tokenized shares across all members
+    uint256 public totalShares; // total shares across all members
     uint256 public totalLoot; // total loot across all members
     uint256 public totalGuildBankTokens; // total tokens with non-zero balance in guild bank
 
     address public constant GUILD = address(0xdead);
     address public constant ESCROW = address(0xbeef);
     address public constant TOTAL = address(0xbabe);
-    mapping(address => uint256) private balances; // guildbank token balances
-    mapping(address => mapping(address => uint256)) public userTokenBalances; // userTokenBalances[userAddress][tokenAddress]
+    mapping(address => uint256) private balances; // guild token balances
+    mapping (address => mapping (address => uint256)) private allowances; // guild token (loot) approved transfers
+    mapping(address => mapping(address => uint256)) private userTokenBalances; // userTokenBalances[userAddress][tokenAddress]
 
     enum Vote {
         Null, // default value, counted as abstention
@@ -129,38 +129,35 @@ contract Moloch is ReentrancyGuard {
         _;
     }
     
-    /******************
-    SUMMONING FUNCTIONS
-    ******************/
     constructor(
-        address[] memory _summoners,
+        address[] memory _summoner,
         address _depositToken,
+        uint256[] memory _summonerShares,
+        uint256[] memory _summonerLoot,
+        uint256 _summonerDeposit,
         uint256 _periodDuration,
         uint256 _votingPeriodLength,
         uint256 _gracePeriodLength,
         uint256 _proposalDeposit,
         uint256 _dilutionBound,
-        uint256 _processingReward,
-        uint256[] memory _summonerShares,
-        uint256 _summoningDeposit,
-        uint256 _summoningRate,
-        uint256 _summoningTermination
+        uint256 _processingReward
     ) public {
         depositToken = _depositToken;
         
-        if (_summoningDeposit > 0) {
+        if (_summonerDeposit > 0) {
             totalGuildBankTokens += 1;
-            unsafeAddToBalance(GUILD, _depositToken, _summoningDeposit);
+            unsafeAddToBalance(GUILD, _depositToken, _summonerDeposit);
         }
         
-        for (uint256 i = 0; i < _summoners.length; i++) {
-            members[_summoners[i]] = Member(_summoners[i], _summonerShares[i], 0, true, 0, 0);
-            memberAddressByDelegateKey[_summoners[i]] = _summoners[i];
+        for (uint256 i = 0; i < _summoner.length; i++) {
+            members[_summoner[i]] = Member(_summoner[i], _summonerShares[i], _summonerLoot[i], true, 0, 0);
+            memberAddressByDelegateKey[_summoner[i]] = _summoner[i];
             totalShares = totalShares.add(_summonerShares[i]);
-            mintGuildToken(_summoners[i], _summonerShares[i]);
+            totalLoot = totalLoot.add(_summonerLoot[i]);
+            mintGuildToken(_summoner[i], _summonerShares[i].add(_summonerLoot[i]));
         }
         
-        require(totalShares <= MAX_BOUND, "member maxed");
+        require(totalSupply() <= MAX_GUILD_BOUND, "guild maxed");
         
         tokenWhitelist[_depositToken] = true;
         approvedTokens.push(_depositToken);
@@ -171,33 +168,7 @@ contract Moloch is ReentrancyGuard {
         proposalDeposit = _proposalDeposit;
         dilutionBound = _dilutionBound;
         processingReward = _processingReward;
-        summoningRate = _summoningRate;
-        summoningTermination = _summoningTermination;
         summoningTime = now;
-    }
-
-    function makeSummoningTribute(uint256 tribute) payable external {
-        require(members[msg.sender].exists == true, "not member");
-        require(getCurrentPeriod() <= summoningTermination, "summoning over");        
-
-        if (depositToken == wETH && msg.value > 0) {
-            require(msg.value == tribute, "insufficient ETH");
-            IWETH(wETH).deposit();
-            (bool success, ) = wETH.call.value(msg.value)("");
-            require(success, "transfer failed");
-            IWETH(wETH).transfer(bank, msg.value);
-        } else {
-            require(IERC20(depositToken).transferFrom(msg.sender, bank, tribute), "transfer failed");
-        }
-        
-        if (userTokenBalances[GUILD][depositToken] == 0) {totalGuildBankTokens += 1;}
-        unsafeAddToBalance(GUILD, depositToken, tribute);
-        
-        uint256 shares = tribute.mul(summoningRate);
-        members[msg.sender].shares = members[msg.sender].shares.add(shares);
-        totalShares = totalShares.add(shares);
-        require(totalShares <= MAX_BOUND, "member maxed");
-        mintGuildToken(msg.sender, shares);
     }
 
     /*****************
@@ -213,7 +184,7 @@ contract Moloch is ReentrancyGuard {
         address paymentToken,
         bytes32 details
     ) payable external nonReentrant returns (uint256 proposalId) {
-        require(sharesRequested.add(lootRequested) <= MAX_BOUND, "member maxed");
+        require(sharesRequested.add(lootRequested) <= MAX_GUILD_BOUND, "guild maxed");
         require(tokenWhitelist[tributeToken], "tributeToken not whitelisted");
         require(tokenWhitelist[paymentToken], "paymentToken not whitelisted");
         require(applicant != address(0), "applicant zeroed");
@@ -379,8 +350,8 @@ contract Moloch is ReentrancyGuard {
             }
 
             // set maximum of total shares encountered at a yes vote - used to bound dilution for yes voters
-            if (totalShares.add(totalLoot) > proposal.maxTotalSharesAndLootAtYesVote) {
-                proposal.maxTotalSharesAndLootAtYesVote = totalShares.add(totalLoot);
+            if (totalSupply() > proposal.maxTotalSharesAndLootAtYesVote) {
+                proposal.maxTotalSharesAndLootAtYesVote = totalSupply();
             }
 
         } else if (vote == Vote.No) {
@@ -404,7 +375,7 @@ contract Moloch is ReentrancyGuard {
         bool didPass = _didPass(proposalIndex);
 
         // Make the proposal fail if the new total number of shares and loot exceeds the limit
-        if (totalShares.add(totalLoot).add(proposal.sharesRequested).add(proposal.lootRequested) > MAX_BOUND) {
+        if (totalSupply().add(proposal.sharesRequested).add(proposal.lootRequested) > MAX_GUILD_BOUND) {
             didPass = false;
         }
 
@@ -519,10 +490,10 @@ contract Moloch is ReentrancyGuard {
             member.jailed = proposalIndex;
 
             // transfer shares to loot
+            member.shares = 0; // revoke all shares
             member.loot = member.loot.add(member.shares);
             totalShares = totalShares.sub(member.shares);
             totalLoot = totalLoot.add(member.shares);
-            member.shares = 0; // revoke all shares
         }
 
         proposedToKick[proposal.applicant] = false;
@@ -538,7 +509,7 @@ contract Moloch is ReentrancyGuard {
         didPass = proposal.yesVotes > proposal.noVotes;
 
         // Make the proposal fail if the dilutionBound is exceeded
-        if ((totalShares.add(totalLoot)).mul(dilutionBound) < proposal.maxTotalSharesAndLootAtYesVote) {
+        if ((totalSupply()).mul(dilutionBound) < proposal.maxTotalSharesAndLootAtYesVote) {
             didPass = false;
         }
 
@@ -571,7 +542,7 @@ contract Moloch is ReentrancyGuard {
     }
 
     function _ragequit(address memberAddress, uint256 sharesToBurn, uint256 lootToBurn) internal {
-        uint256 initialTotalSharesAndLoot = totalShares.add(totalLoot);
+        uint256 initialTotalSharesAndLoot = totalSupply();
 
         Member storage member = members[memberAddress];
 
@@ -583,11 +554,11 @@ contract Moloch is ReentrancyGuard {
         uint256 sharesAndLootToBurn = sharesToBurn.add(lootToBurn);
 
         // burn tokens, shares and loot
-        burnGuildToken(memberAddress, sharesAndLootToBurn);
         member.shares = member.shares.sub(sharesToBurn);
         member.loot = member.loot.sub(lootToBurn);
         totalShares = totalShares.sub(sharesToBurn);
         totalLoot = totalLoot.sub(lootToBurn);
+        burnGuildToken(memberAddress, sharesAndLootToBurn);
 
         for (uint256 i = 0; i < approvedTokens.length; i++) {
             uint256 amountToRagequit = fairShare(userTokenBalances[GUILD][approvedTokens[i]], sharesAndLootToBurn, initialTotalSharesAndLoot);
@@ -611,7 +582,7 @@ contract Moloch is ReentrancyGuard {
 
         _ragequit(memberToKick, 0, member.loot);
     }
-
+    
     function withdrawBalance(address token, uint256 amount) external nonReentrant {
         _withdrawBalance(token, amount);
     }
@@ -690,16 +661,16 @@ contract Moloch is ReentrancyGuard {
     /***************
     GETTER FUNCTIONS
     ***************/
-    function balanceOf(address memberAddress) public view returns (uint256) { // tracks tokenized share balances
+    function allowance(address owner, address spender) public view returns (uint256) { // tracks guild token approvals for loot transfer
+        return allowances[owner][spender];
+    }
+    
+    function balanceOf(address memberAddress) public view returns (uint256) { // tracks guild token balances
         return balances[memberAddress];
     }
     
-    function max(uint256 x, uint256 y) internal pure returns (uint256) {
-        return x >= y ? x : y;
-    }
-    
-    function totalSupply() public view returns (uint256) { // tracks tokenized share totaly supply
-        return totalShares.add(totalLoot);
+    function totalSupply() public view returns (uint256) { // tracks guild token total supply
+        return totalShares + totalLoot;
     }
     
     function getCurrentPeriod() public view returns (uint256) {
@@ -727,6 +698,10 @@ contract Moloch is ReentrancyGuard {
     function getUserTokenBalance(address user, address token) public view returns (uint256) {
         return userTokenBalances[user][token];
     }
+    
+    function max(uint256 x, uint256 y) internal pure returns (uint256) {
+        return x >= y ? x : y;
+    }
 
     /***************
     HELPER FUNCTIONS
@@ -745,16 +720,6 @@ contract Moloch is ReentrancyGuard {
         return (balance / totalSharesAndLoot) * shares;
     }
     
-    function burnGuildToken(address memberAddress, uint256 amount) internal {
-        balances[memberAddress] -= amount;
-        emit Transfer(memberAddress, address(0), amount);
-    }
-    
-    function mintGuildToken(address memberAddress, uint256 amount) internal {
-        balances[memberAddress] += amount;
-        emit Transfer(address(0), memberAddress, amount);
-    }
-    
     function unsafeAddToBalance(address user, address token, uint256 amount) internal {
         userTokenBalances[user][token] += amount;
         userTokenBalances[TOTAL][token] += amount;
@@ -768,5 +733,48 @@ contract Moloch is ReentrancyGuard {
     function unsafeSubtractFromBalance(address user, address token, uint256 amount) internal {
         userTokenBalances[user][token] -= amount;
         userTokenBalances[TOTAL][token] -= amount;
+    }
+    
+    /********************
+    GUILD TOKEN FUNCTIONS
+    ********************/
+    function approve(address spender, uint256 amount) external {
+        allowances[msg.sender][spender] = amount;
+        
+        emit Approval(msg.sender, spender, amount);
+    }
+    
+    function burnGuildToken(address memberAddress, uint256 amount) internal {
+        balances[memberAddress] -= amount;
+        
+        emit Transfer(memberAddress, address(0), amount);
+    }
+    
+    function mintGuildToken(address memberAddress, uint256 amount) internal {
+        balances[memberAddress] += amount;
+        
+        emit Transfer(address(0), memberAddress, amount);
+    }
+    
+    function transfer(address receiver, uint256 lootToTransfer) external {
+        members[msg.sender].loot = members[msg.sender].loot.sub(lootToTransfer);
+        members[receiver].loot = members[receiver].loot.add(lootToTransfer);
+        
+        balances[msg.sender] -= lootToTransfer;
+        balances[receiver] += lootToTransfer;
+        
+        emit Transfer(msg.sender, receiver, lootToTransfer);
+    }
+    
+    function transferFrom(address sender, address receiver, uint256 lootToTransfer) external {
+        allowances[sender][msg.sender] -= lootToTransfer;
+        
+        members[sender].loot = members[sender].loot.sub(lootToTransfer);
+        members[receiver].loot = members[receiver].loot.add(lootToTransfer);
+        
+        balances[msg.sender] -= lootToTransfer;
+        balances[receiver] += lootToTransfer;
+        
+        emit Transfer(sender, receiver, lootToTransfer);
     }
 }
