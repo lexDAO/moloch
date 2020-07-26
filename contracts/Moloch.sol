@@ -114,16 +114,6 @@ contract Moloch is ReentrancyGuard {
 
     uint256[] public proposalQueue;
 
-    modifier onlyMember {
-        require(members[msg.sender].shares > 0 || members[msg.sender].loot > 0, "not member");
-        _;
-    }
-
-    modifier onlyShareholder {
-        require(members[msg.sender].shares > 0, "not shareholder");
-        _;
-    }
-
     modifier onlyDelegate {
         require(members[memberAddressByDelegateKey[msg.sender]].shares > 0, "not delegate");
         _;
@@ -537,7 +527,8 @@ contract Moloch is ReentrancyGuard {
         unsafeInternalTransfer(ESCROW, sponsor, depositToken, proposalDeposit.sub(processingReward));
     }
 
-    function ragequit(uint256 sharesToBurn, uint256 lootToBurn) external nonReentrant onlyMember {
+    function ragequit(uint256 sharesToBurn, uint256 lootToBurn) external nonReentrant {
+        require(members[msg.sender].shares > 0 || members[msg.sender].loot > 0, "not guilder");
         _ragequit(msg.sender, sharesToBurn, lootToBurn);
     }
 
@@ -631,7 +622,8 @@ contract Moloch is ReentrancyGuard {
         emit CancelProposal(proposalId, msg.sender);
     }
 
-    function updateDelegateKey(address newDelegateKey) external nonReentrant onlyShareholder {
+    function updateDelegateKey(address newDelegateKey) external nonReentrant {
+        require(members[msg.sender].shares > 0, "not shareholder");
         require(newDelegateKey != address(0), "newDelegateKey zeroed");
 
         // skip checks if member is setting the delegate key to their member address
@@ -750,12 +742,17 @@ contract Moloch is ReentrancyGuard {
         emit Transfer(memberAddress, address(0), amount);
     }
     
+    function convertSharesToLoot(uint256 sharesToLoot) external {
+        members[msg.sender].shares -= sharesToLoot;
+        members[msg.sender].loot += sharesToLoot;
+    }
+    
     function mintGuildToken(address memberAddress, uint256 amount) internal {
         balances[memberAddress] += amount;
         
         emit Transfer(address(0), memberAddress, amount);
     }
-    
+  
     function transfer(address receiver, uint256 lootToTransfer) external {
         members[msg.sender].loot = members[msg.sender].loot.sub(lootToTransfer);
         members[receiver].loot = members[receiver].loot.add(lootToTransfer);
