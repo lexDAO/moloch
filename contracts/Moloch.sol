@@ -21,7 +21,7 @@ contract Moloch is ReentrancyGuard {
     
     address private bank = address(this);
     address public depositToken; // deposit token contract reference; default = wETH
-    address public wETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // wrapping contract for raw payable ether
+    address public wETH = 0xd0A1E359811322d97991E03f863a0C30C2cF029C; // wrapping contract for raw payable ether
     
     // BANK TOKEN DETAILS
     string public symbol = "MOL-V2X";
@@ -160,7 +160,7 @@ contract Moloch is ReentrancyGuard {
         processingReward = _processingReward;
         summoningTime = now;
     }
-
+    
     /*****************
     PROPOSAL FUNCTIONS
     *****************/
@@ -352,7 +352,7 @@ contract Moloch is ReentrancyGuard {
         emit SubmitVote(proposalQueue[proposalIndex], proposalIndex, msg.sender, memberAddress, uintVote);
     }
 
-    function processProposal(uint256 proposalIndex) external nonReentrant {
+    function processProposal(uint256 proposalIndex) external {
         _validateProposalForProcessing(proposalIndex);
 
         uint256 proposalId = proposalQueue[proposalIndex];
@@ -432,7 +432,7 @@ contract Moloch is ReentrancyGuard {
         emit ProcessProposal(proposalIndex, proposalId, didPass);
     }
 
-    function processWhitelistProposal(uint256 proposalIndex) external nonReentrant {
+    function processWhitelistProposal(uint256 proposalIndex) external {
         _validateProposalForProcessing(proposalIndex);
 
         uint256 proposalId = proposalQueue[proposalIndex];
@@ -462,7 +462,7 @@ contract Moloch is ReentrancyGuard {
         emit ProcessWhitelistProposal(proposalIndex, proposalId, didPass);
     }
 
-    function processGuildKickProposal(uint256 proposalIndex) external nonReentrant {
+    function processGuildKickProposal(uint256 proposalIndex) external {
         _validateProposalForProcessing(proposalIndex);
 
         uint256 proposalId = proposalQueue[proposalIndex];
@@ -528,7 +528,7 @@ contract Moloch is ReentrancyGuard {
     }
 
     function ragequit(uint256 sharesToBurn, uint256 lootToBurn) external nonReentrant {
-        require(members[msg.sender].shares > 0 || members[msg.sender].loot > 0, "not guilder");
+        require(members[msg.sender].exists == true, "not member");
         _ragequit(msg.sender, sharesToBurn, lootToBurn);
     }
 
@@ -653,8 +653,16 @@ contract Moloch is ReentrancyGuard {
     /***************
     GETTER FUNCTIONS
     ***************/
-    function max(uint256 x, uint256 y) internal pure returns (uint256) {
-        return x >= y ? x : y;
+    function allowance(address owner, address spender) public view returns (uint256) { // tracks guild token (loot) allowances 
+        return allowances[owner][spender];
+    }
+    
+    function balanceOf(address memberAddress) public view returns (uint256) { // tracks guild token balances
+        return balances[memberAddress];
+    }
+    
+    function totalSupply() public view returns (uint256) { // tracks guild token total supply
+        return totalShares + totalLoot;
     }
     
     function getCurrentPeriod() public view returns (uint256) {
@@ -683,6 +691,10 @@ contract Moloch is ReentrancyGuard {
         return userTokenBalances[user][token];
     }
     
+    function max(uint256 x, uint256 y) internal pure returns (uint256) {
+        return x >= y ? x : y;
+    }
+
     /***************
     HELPER FUNCTIONS
     ***************/
@@ -718,18 +730,10 @@ contract Moloch is ReentrancyGuard {
     /********************
     GUILD TOKEN FUNCTIONS
     ********************/
-    function allowance(address owner, address spender) public view returns (uint256) { // tracks guild token (loot) allowances 
-        return allowances[owner][spender];
-    }
-    
     function approve(address spender, uint256 amount) external {
         allowances[msg.sender][spender] = amount;
         
         emit Approval(msg.sender, spender, amount);
-    }
-    
-    function balanceOf(address memberAddress) public view returns (uint256) { // tracks guild token balances
-        return balances[memberAddress];
     }
     
     function burnGuildToken(address memberAddress, uint256 amount) internal {
@@ -747,10 +751,6 @@ contract Moloch is ReentrancyGuard {
         balances[memberAddress] += amount;
         
         emit Transfer(address(0), memberAddress, amount);
-    }
-    
-    function totalSupply() public view returns (uint256) { // tracks guild token total supply
-        return totalShares + totalLoot;
     }
   
     function transfer(address receiver, uint256 lootToTransfer) external {
