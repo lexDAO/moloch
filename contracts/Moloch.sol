@@ -21,7 +21,7 @@ contract Moloch is ReentrancyGuard {
     
     address private bank = address(this);
     address public depositToken; // deposit token contract reference; default = wETH
-    address public wETH = 0xd0A1E359811322d97991E03f863a0C30C2cF029C; // wrapping contract for raw payable ether
+    address public wETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // wrapping contract for raw payable ether
     
     // BANK TOKEN DETAILS
     string public symbol = "MOL-V2X";
