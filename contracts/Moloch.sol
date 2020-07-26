@@ -21,7 +21,7 @@ contract Moloch is ReentrancyGuard {
     
     address private bank = address(this);
     address public depositToken; // deposit token contract reference; default = wETH
-    address public wETH = 0xc778417E063141139Fce010982780140Aa0cD5Ab; // wrapping contract for raw payable ether
+    address public wETH = 0xd0A1E359811322d97991E03f863a0C30C2cF029C; // wrapping contract for raw payable ether
     
     // BANK TOKEN DETAILS
     string public symbol = "MOL-V2X";
@@ -570,7 +570,7 @@ contract Moloch is ReentrancyGuard {
             }
         }
 
-        emit Ragequit(msg.sender, sharesToBurn, lootToBurn);
+        emit Ragequit(memberAddress, sharesToBurn, lootToBurn);
     }
 
     function ragekick(address memberToKick) external nonReentrant {
