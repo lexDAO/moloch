@@ -49,8 +49,8 @@ contract Moloch is ReentrancyGuard {
     event CancelProposal(uint256 indexed proposalId, address applicantAddress);
     event UpdateDelegateKey(address indexed memberAddress, address newDelegateKey);
     event Withdraw(address indexed memberAddress, address token, uint256 amount);
-    event Approval(address indexed owner, address indexed spender, uint256 amount);
-    event Transfer(address indexed from, address indexed to, uint256 amount); // token event tracking
+    event Approval(address indexed owner, address indexed spender, uint256 amount); // guild token (loot) allowance tracking
+    event Transfer(address indexed from, address indexed to, uint256 amount); // guild token mint, burn & (loot) transfer tracking
 
     // *******************
     // INTERNAL ACCOUNTING
@@ -64,7 +64,7 @@ contract Moloch is ReentrancyGuard {
     address public constant ESCROW = address(0xbeef);
     address public constant TOTAL = address(0xbabe);
     mapping(address => uint256) private balances; // guild token balances
-    mapping (address => mapping (address => uint256)) private allowances; // guild token (loot) approved transfers
+    mapping (address => mapping (address => uint256)) private allowances; // guild token (loot) allowances
     mapping(address => mapping(address => uint256)) private userTokenBalances; // userTokenBalances[userAddress][tokenAddress]
 
     enum Vote {
@@ -661,7 +661,7 @@ contract Moloch is ReentrancyGuard {
     /***************
     GETTER FUNCTIONS
     ***************/
-    function allowance(address owner, address spender) public view returns (uint256) { // tracks guild token approvals for loot transfer
+    function allowance(address owner, address spender) public view returns (uint256) { // tracks guild token (loot) allowances 
         return allowances[owner][spender];
     }
     
