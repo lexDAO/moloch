@@ -12,8 +12,8 @@ contract Moloch is ReentrancyGuard {
     GLOBAL CONSTANTS
     ***************/
     address private bank = address(this);
-    address public depositToken; // deposit token contract reference; default = wETH (kovan)
-    address public wETH = 0xd0A1E359811322d97991E03f863a0C30C2cF029C; // wrapping contract for raw payable ether
+    address public depositToken; // deposit token contract reference; default = wETH
+    address public wETH = 0xd0A1E359811322d97991E03f863a0C30C2cF029C; // wrapping contract for raw payable ether (kovan)
     
     uint256 public periodDuration; // default = 17280 = 4.8 hours in seconds (5 periods per day)
     uint256 public votingPeriodLength; // default = 35 periods (7 days)
