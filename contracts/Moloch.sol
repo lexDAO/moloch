@@ -241,7 +241,7 @@ contract Moloch is ReentrancyGuard {
         actions[proposalId] = action;
         
         uint8[7] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
-        flags[6] = 1; // guild kick
+        flags[6] = 1; // guild action
         
         _submitProposal(bank, 0, 0, 0, depositToken, 0, depositToken, details, flags);
         
