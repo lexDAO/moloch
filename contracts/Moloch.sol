@@ -38,6 +38,7 @@ contract Moloch is ReentrancyGuard {
     // ***************
     // EVENTS
     // ***************
+    event MakeGuildPayment(address indexed caller, address indexed paymentToken, uint256 indexed payment, bytes32 details);
     event SubmitProposal(address indexed applicant, uint256 sharesRequested, uint256 lootRequested, uint256 tributeOffered, address tributeToken, uint256 paymentRequested, address paymentToken, bytes32 details, bool[6] flags, uint256 proposalId, address indexed delegateKey, address indexed memberAddress);
     event SponsorProposal(address indexed delegateKey, address indexed memberAddress, uint256 proposalId, uint256 proposalIndex, uint256 startingPeriod);
     event SubmitVote(uint256 proposalId, uint256 indexed proposalIndex, address indexed delegateKey, address indexed memberAddress, uint8 uintVote);
@@ -123,7 +124,6 @@ contract Moloch is ReentrancyGuard {
         address[] memory _summoner,
         address _depositToken,
         uint256[] memory _summonerShares,
-        uint256[] memory _summonerLoot,
         uint256 _summonerDeposit,
         uint256 _periodDuration,
         uint256 _votingPeriodLength,
@@ -140,14 +140,13 @@ contract Moloch is ReentrancyGuard {
         }
         
         for (uint256 i = 0; i < _summoner.length; i++) {
-            members[_summoner[i]] = Member(_summoner[i], _summonerShares[i], _summonerLoot[i], true, 0, 0);
+            members[_summoner[i]] = Member(_summoner[i], _summonerShares[i], 0, true, 0, 0);
             memberAddressByDelegateKey[_summoner[i]] = _summoner[i];
             totalShares = totalShares.add(_summonerShares[i]);
-            totalLoot = totalLoot.add(_summonerLoot[i]);
-            mintGuildToken(_summoner[i], _summonerShares[i].add(_summonerLoot[i]));
+            mintGuildToken(_summoner[i], _summonerShares[i]);
         }
         
-        require(totalSupply() <= MAX_GUILD_BOUND, "guild maxed");
+        require(totalShares <= MAX_GUILD_BOUND, "guild maxed");
         
         tokenWhitelist[_depositToken] = true;
         approvedTokens.push(_depositToken);
@@ -159,6 +158,16 @@ contract Moloch is ReentrancyGuard {
         dilutionBound = _dilutionBound;
         processingReward = _processingReward;
         summoningTime = now;
+    }
+    
+    function makeGuildPayment(address paymentToken, uint256 payment, bytes32 details) external {
+        require(tokenWhitelist[paymentToken], "paymentToken not whitelisted");
+        require(IERC20(paymentToken).transferFrom(msg.sender, bank, payment), "transfer failed");
+
+        if (userTokenBalances[GUILD][paymentToken] == 0) {totalGuildBankTokens += 1;}
+        unsafeAddToBalance(GUILD, paymentToken, payment);
+        
+        emit MakeGuildPayment(msg.sender, paymentToken, payment, details);
     }
     
     /*****************
