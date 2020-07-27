@@ -130,8 +130,8 @@ contract Moloch is ReentrancyGuard {
     }
     
     constructor(
-        address[] memory _summoner,
         address _depositToken,
+        address[] memory _summoner,
         uint256[] memory _summonerShares,
         uint256 _summonerDeposit,
         uint256 _periodDuration,
@@ -141,8 +141,6 @@ contract Moloch is ReentrancyGuard {
         uint256 _dilutionBound,
         uint256 _processingReward
     ) public {
-        depositToken = _depositToken;
-        
         if (_summonerDeposit > 0) {
             totalGuildBankTokens += 1;
             unsafeAddToBalance(GUILD, _depositToken, _summonerDeposit);
@@ -160,6 +158,7 @@ contract Moloch is ReentrancyGuard {
         tokenWhitelist[_depositToken] = true;
         approvedTokens.push(_depositToken);
         
+        depositToken = _depositToken;
         periodDuration = _periodDuration;
         votingPeriodLength = _votingPeriodLength;
         gracePeriodLength = _gracePeriodLength;
@@ -590,7 +589,7 @@ contract Moloch is ReentrancyGuard {
         unsafeInternalTransfer(ESCROW, sponsor, depositToken, proposalDeposit - processingReward);
     }
 
-    function ragequit(uint256 sharesToBurn, uint256 lootToBurn) external {
+    function ragequit(uint256 sharesToBurn, uint256 lootToBurn) external nonReentrant {
         require(members[msg.sender].exists == 1, "not member");
         
         _ragequit(msg.sender, sharesToBurn, lootToBurn);
