@@ -7,10 +7,10 @@
 ***2X UPGRADES INCLUDE:***
 
 * **Summoning Circle** 🔥 👹👹👹 🔥
-> start membership with circle of summoners with unique shares/loot claimable against guild bank
+> start membership with circle of summoners with unique shares claimable against guild bank
 
 * **Presale Deposit** 💰 
-> presale summoning circle accounts / forward collected `depositToken` sum to back shares/loot in guild bank
+> presale summoning circle accounts forward collected `depositToken` sum to back shares/loot in guild bank
 
 * **Guild Tokens** 🏵️ 
 > guild shares/loot are tokenized with basic ERC-20 interface (approve, transfer, transferFrom) / loot is freely transferable (members should respect guild/jxd rules)
