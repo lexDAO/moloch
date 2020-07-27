@@ -13,7 +13,7 @@ contract Moloch is ReentrancyGuard {
     ***************/
     address private bank = address(this);
     address public depositToken; // deposit token contract reference; default = wETH
-    address public wETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // wrapping contract for raw payable ether
+    address public wETH = 0xc778417E063141139Fce010982780140Aa0cD5Ab; // wrapping contract for raw payable ether
     
     uint256 public periodDuration; // default = 17280 = 4.8 hours in seconds (5 periods per day)
     uint256 public votingPeriodLength; // default = 35 periods (7 days)
@@ -38,7 +38,7 @@ contract Moloch is ReentrancyGuard {
     // ***************
     // EVENTS
     // ***************
-    event SubmitProposal(address indexed applicant, uint256 sharesRequested, uint256 lootRequested, uint256 tributeOffered, address tributeToken, uint256 paymentRequested, address paymentToken, bytes32 details, uint8[6] flags, uint256 proposalId, address indexed delegateKey, address indexed memberAddress);
+    event SubmitProposal(address indexed applicant, uint256 sharesRequested, uint256 lootRequested, uint256 tributeOffered, address tributeToken, uint256 paymentRequested, address paymentToken, bytes32 details, uint8[7] flags, uint256 proposalId, address indexed delegateKey, address indexed memberAddress);
     event CancelProposal(uint256 indexed proposalId, address applicantAddress);
     event SponsorProposal(address indexed delegateKey, address indexed memberAddress, uint256 proposalId, uint256 proposalIndex, uint256 startingPeriod);
     event SubmitVote(uint256 proposalId, uint256 indexed proposalIndex, address indexed delegateKey, address indexed memberAddress, uint8 uintVote);
@@ -98,7 +98,7 @@ contract Moloch is ReentrancyGuard {
         address sponsor; // the member that sponsored the proposal (moving it into the queue)
         address tributeToken; // tribute token contract reference
         address paymentToken; // payment token contract reference
-        uint8[6] flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, standard]
+        uint8[7] flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
         uint256 sharesRequested; // the # of shares the applicant is requesting
         uint256 lootRequested; // the amount of loot the applicant is requesting
         uint256 tributeOffered; // amount of tokens offered as tribute
@@ -204,7 +204,7 @@ contract Moloch is ReentrancyGuard {
         
         unsafeAddToBalance(ESCROW, tributeToken, tributeOffered);
 
-        uint8[6] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, standard]
+        uint8[7] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
 
         _submitProposal(applicant, sharesRequested, lootRequested, tributeOffered, tributeToken, paymentRequested, paymentToken, details, flags);
         
@@ -216,7 +216,7 @@ contract Moloch is ReentrancyGuard {
         require(!tokenWhitelist[tokenToWhitelist], "already whitelisted");
         require(approvedTokens.length < MAX_TOKEN_WHITELIST_COUNT, "whitelist maxed");
 
-        uint8[6] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, standard]
+        uint8[7] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
         flags[4] = 1; // whitelist
 
         _submitProposal(address(0), 0, 0, 0, tokenToWhitelist, 0, address(0), details, flags);
@@ -240,7 +240,8 @@ contract Moloch is ReentrancyGuard {
         
         actions[proposalId] = action;
         
-        uint8[6] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, standard]
+        uint8[7] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
+        flags[6] = 1; // guild kick
         
         _submitProposal(bank, 0, 0, 0, depositToken, 0, depositToken, details, flags);
         
@@ -253,7 +254,7 @@ contract Moloch is ReentrancyGuard {
         require(member.shares > 0 || member.loot > 0, "must have share or loot");
         require(members[memberToKick].jailed == 0, "already jailed");
 
-        uint8[6] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, standard]
+        uint8[7] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
         flags[5] = 1; // guild kick
 
         _submitProposal(memberToKick, 0, 0, 0, address(0), 0, address(0), details, flags);
@@ -270,7 +271,7 @@ contract Moloch is ReentrancyGuard {
         uint256 paymentRequested,
         address paymentToken,
         bytes32 details,
-        uint8[6] memory flags
+        uint8[7] memory flags
     ) internal {
         Proposal memory proposal = Proposal({
             applicant : applicant,
@@ -497,12 +498,12 @@ contract Moloch is ReentrancyGuard {
 
     function processGuildActionProposal(uint256 proposalIndex) external returns (bytes memory) {
         _validateProposalForProcessing(proposalIndex);
-
+        
         uint256 proposalId = proposalQueue[proposalIndex];
         Action storage action = actions[proposalId];
         Proposal storage proposal = proposals[proposalId];
         
-        require(proposal.flags[4] == 0 && proposal.flags[5] == 0, "not standard proposal");
+        require(proposal.flags[6] == 1, "not action proposal");
 
         proposal.flags[1] = 1; // processed
 
@@ -528,7 +529,7 @@ contract Moloch is ReentrancyGuard {
         uint256 proposalId = proposalQueue[proposalIndex];
         Proposal storage proposal = proposals[proposalId];
 
-        require(proposal.flags[5] == 1, "not kick");
+        require(proposal.flags[5] == 1, "not kick proposal");
 
         proposal.flags[1] = 1; // processed
 
@@ -735,7 +736,7 @@ contract Moloch is ReentrancyGuard {
         return proposals[proposalQueue[proposalIndex]].votesByMember[memberAddress];
     }
 
-    function getProposalFlags(uint256 proposalId) public view returns (uint8[6] memory) {
+    function getProposalFlags(uint256 proposalId) public view returns (uint8[7] memory) {
         return proposals[proposalId].flags;
     }
     
