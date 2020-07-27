@@ -11,6 +11,10 @@ contract Moloch is ReentrancyGuard {
     /***************
     GLOBAL CONSTANTS
     ***************/
+    address private bank = address(this);
+    address public depositToken; // deposit token contract reference; default = wETH
+    address public wETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // wrapping contract for raw payable ether
+    
     uint256 public periodDuration; // default = 17280 = 4.8 hours in seconds (5 periods per day)
     uint256 public votingPeriodLength; // default = 35 periods (7 days)
     uint256 public gracePeriodLength; // default = 35 periods (7 days)
@@ -19,15 +23,6 @@ contract Moloch is ReentrancyGuard {
     uint256 public processingReward; // default = 0.1 - amount of ETH to give to whoever processes a proposal
     uint256 public summoningTime; // needed to determine the current period
     
-    address private bank = address(this);
-    address public depositToken; // deposit token contract reference; default = wETH
-    address public wETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // wrapping contract for raw payable ether
-    
-    // BANK TOKEN DETAILS
-    string public symbol = "MOL-V2X";
-    string public name = "Moloch DAO v2x Bank";
-    uint8 public decimals = 18;
-
     // HARD-CODED LIMITS
     // These numbers are quite arbitrary; they are small enough to avoid overflows when doing calculations
     // with periods or shares, yet big enough to not limit reasonable use cases.
@@ -35,35 +30,41 @@ contract Moloch is ReentrancyGuard {
     uint256 constant MAX_TOKEN_WHITELIST_COUNT = 400; // maximum number of whitelisted tokens
     uint256 constant MAX_TOKEN_GUILDBANK_COUNT = 200; // maximum number of tokens with non-zero balance in guildbank
 
+    // BANK TOKEN DETAILS
+    string public name = "Moloch DAO v2x Bank";
+    string public symbol = "MOL-V2X";
+    uint8 public decimals = 18;
+
     // ***************
     // EVENTS
     // ***************
-    event SubmitProposal(address indexed applicant, uint8[6] flags, uint256 sharesRequested, uint256 lootRequested, uint256 tributeOffered, address tributeToken, uint256 paymentRequested, address paymentToken, bytes32 details, uint256 proposalId, address indexed delegateKey, address indexed memberAddress);
+    event SubmitProposal(address indexed applicant, uint256 sharesRequested, uint256 lootRequested, uint256 tributeOffered, address tributeToken, uint256 paymentRequested, address paymentToken, bytes32 details, uint8[6] flags, uint256 proposalId, address indexed delegateKey, address indexed memberAddress);
+    event CancelProposal(uint256 indexed proposalId, address applicantAddress);
     event SponsorProposal(address indexed delegateKey, address indexed memberAddress, uint256 proposalId, uint256 proposalIndex, uint256 startingPeriod);
     event SubmitVote(uint256 proposalId, uint256 indexed proposalIndex, address indexed delegateKey, address indexed memberAddress, uint8 uintVote);
     event ProcessProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, uint8 didPass);
     event ProcessWhitelistProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, uint8 didPass);
     event ProcessGuildActionProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, uint8 didPass);
     event ProcessGuildKickProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, uint8 didPass);
-    event Ragequit(address indexed memberAddress, uint256 sharesToBurn, uint256 lootToBurn);
-    event TokensCollected(address indexed token, uint256 amountToCollect);
-    event CancelProposal(uint256 indexed proposalId, address applicantAddress);
     event UpdateDelegateKey(address indexed memberAddress, address newDelegateKey);
-    event Withdraw(address indexed memberAddress, address token, uint256 amount);
     event Approval(address indexed owner, address indexed spender, uint256 amount); // guild token (loot) allowance tracking
     event Transfer(address indexed from, address indexed to, uint256 amount); // guild token mint, burn & (loot) transfer tracking
+    event Ragequit(address indexed memberAddress, uint256 sharesToBurn, uint256 lootToBurn);
+    event TokensCollected(address indexed token, uint256 amountToCollect);
+    event Withdraw(address indexed memberAddress, address token, uint256 amount);
     
     // *******************
     // INTERNAL ACCOUNTING
     // *******************
+    address public constant GUILD = address(0xdead);
+    address public constant ESCROW = address(0xbeef);
+    address public constant TOTAL = address(0xbabe);
+    
     uint256 public proposalCount; // total proposals submitted
     uint256 public totalShares; // total shares across all members
     uint256 public totalLoot; // total loot across all members
     uint256 public totalGuildBankTokens; // total tokens with non-zero balance in guild bank
 
-    address public constant GUILD = address(0xdead);
-    address public constant ESCROW = address(0xbeef);
-    address public constant TOTAL = address(0xbabe);
     mapping(uint256 => Action) public actions; // proposalId => Action
     mapping(address => uint256) private balances; // guild token balances
     mapping (address => mapping (address => uint256)) private allowances; // guild token (loot) allowances
@@ -78,7 +79,6 @@ contract Moloch is ReentrancyGuard {
     struct Action {
         address proposer;
         address to;
-        uint8 executed;
         uint256 value;
         bytes data;
     }
@@ -96,18 +96,18 @@ contract Moloch is ReentrancyGuard {
         address applicant; // the applicant who wishes to become a member - this key will be used for withdrawals (doubles as guild kick target for gkick proposals)
         address proposer; // the account that submitted the proposal (can be non-member)
         address sponsor; // the member that sponsored the proposal (moving it into the queue)
+        address tributeToken; // tribute token contract reference
+        address paymentToken; // payment token contract reference
         uint8[6] flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, standard]
         uint256 sharesRequested; // the # of shares the applicant is requesting
         uint256 lootRequested; // the amount of loot the applicant is requesting
         uint256 tributeOffered; // amount of tokens offered as tribute
-        address tributeToken; // tribute token contract reference
         uint256 paymentRequested; // amount of tokens requested as payment
-        address paymentToken; // payment token contract reference
         uint256 startingPeriod; // the period in which voting can start for this proposal
         uint256 yesVotes; // the total number of YES votes for this proposal
         uint256 noVotes; // the total number of NO votes for this proposal
-        bytes32 details; // proposal details to add context for members 
         uint256 maxTotalSharesAndLootAtYesVote; // the maximum # of total shares encountered at a yes vote on this proposal
+        bytes32 details; // proposal details to add context for members 
         mapping(address => Vote) votesByMember; // the votes on this proposal by each member
     }
 
@@ -169,8 +169,6 @@ contract Moloch is ReentrancyGuard {
         summoningTime = now;
     }
     
-    function() external payable {}
-
     /*****************
     PROPOSAL FUNCTIONS
     *****************/
@@ -187,7 +185,6 @@ contract Moloch is ReentrancyGuard {
         require(sharesRequested.add(lootRequested) <= MAX_GUILD_BOUND, "guild maxed");
         require(tokenWhitelist[tributeToken], "tributeToken not whitelisted");
         require(tokenWhitelist[paymentToken], "paymentToken not whitelisted");
-        require(applicant != address(0), "applicant zeroed");
         require(applicant != GUILD && applicant != ESCROW && applicant != TOTAL, "applicant unreservable");
         require(members[applicant].jailed == 0, "applicant jailed");
 
@@ -195,7 +192,7 @@ contract Moloch is ReentrancyGuard {
             require(totalGuildBankTokens < MAX_TOKEN_GUILDBANK_COUNT, "guildbank maxed");
         }
         
-        // collect tribute from proposer and store it in the Moloch until the proposal is processed
+        // collect tribute from proposer and store it in the Moloch until the proposal is processed / if ETH, wrap into wETH
         if (tributeToken == wETH && msg.value > 0) {
             require(msg.value == tributeOffered, "insufficient ETH");
             IWETH(wETH).deposit();
@@ -210,7 +207,7 @@ contract Moloch is ReentrancyGuard {
 
         uint8[6] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, standard]
 
-        _submitProposal(applicant, flags, sharesRequested, lootRequested, tributeOffered, tributeToken, paymentRequested, paymentToken, details);
+        _submitProposal(applicant, sharesRequested, lootRequested, tributeOffered, tributeToken, paymentRequested, paymentToken, details, flags);
         
         return proposalCount - 1; // return proposalId - contracts calling submit might want it
     }
@@ -223,7 +220,7 @@ contract Moloch is ReentrancyGuard {
         uint8[6] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, standard]
         flags[4] = 1; // whitelist
 
-        _submitProposal(address(0), flags, 0, 0, 0, tokenToWhitelist, 0, address(0), details);
+        _submitProposal(address(0), 0, 0, 0, tokenToWhitelist, 0, address(0), details, flags);
         
         return proposalCount - 1;
     }
@@ -238,7 +235,6 @@ contract Moloch is ReentrancyGuard {
         Action memory action = Action({
             proposer: msg.sender,
             to: actionTo,
-            executed: 0,
             value: actionValue,
             data: actionData
         });
@@ -247,7 +243,7 @@ contract Moloch is ReentrancyGuard {
         
         uint8[6] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, standard]
         
-        _submitProposal(bank, flags, 0, 0, 0, depositToken, 0, depositToken, details);
+        _submitProposal(bank, 0, 0, 0, depositToken, 0, depositToken, details, flags);
         
         return proposalCount - 1;
     }
@@ -261,44 +257,44 @@ contract Moloch is ReentrancyGuard {
         uint8[6] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, standard]
         flags[5] = 1; // guild kick
 
-        _submitProposal(memberToKick, flags, 0, 0, 0, address(0), 0, address(0), details);
+        _submitProposal(memberToKick, 0, 0, 0, address(0), 0, address(0), details, flags);
         
         return proposalCount - 1;
     }
     
     function _submitProposal(
         address applicant,
-        uint8[6] memory flags,
         uint256 sharesRequested,
         uint256 lootRequested,
         uint256 tributeOffered,
         address tributeToken,
         uint256 paymentRequested,
         address paymentToken,
-        bytes32 details
+        bytes32 details,
+        uint8[6] memory flags
     ) internal {
         Proposal memory proposal = Proposal({
             applicant : applicant,
             proposer : msg.sender,
             sponsor : address(0),
+            tributeToken : tributeToken,
+            paymentToken : paymentToken,
             flags : flags,
             sharesRequested : sharesRequested,
             lootRequested : lootRequested,
             tributeOffered : tributeOffered,
-            tributeToken : tributeToken,
             paymentRequested : paymentRequested,
-            paymentToken : paymentToken,
             startingPeriod : 0,
             yesVotes : 0,
             noVotes : 0,
-            details : details,
-            maxTotalSharesAndLootAtYesVote : 0
+            maxTotalSharesAndLootAtYesVote : 0,
+            details : details
         });
-
+        
         proposals[proposalCount] = proposal;
         address memberAddress = memberAddressByDelegateKey[msg.sender];
         // NOTE: argument order matters, avoid stack too deep
-        emit SubmitProposal(applicant, flags, sharesRequested, lootRequested, tributeOffered, tributeToken, paymentRequested, paymentToken, details, proposalCount, msg.sender, memberAddress);
+        emit SubmitProposal(applicant, sharesRequested, lootRequested, tributeOffered, tributeToken, paymentRequested, paymentToken, details, flags, proposalCount, msg.sender, memberAddress);
         
         proposalCount += 1;
     }
@@ -518,7 +514,6 @@ contract Moloch is ReentrancyGuard {
             require(address(this).balance >= action.value, "insufficient eth");
             
             // execute call 
-            action.executed = 1;
             (bool success, bytes memory retData) = action.to.call.value(action.value)(action.data);
             require(success, "call failure");
             
@@ -760,6 +755,8 @@ contract Moloch is ReentrancyGuard {
     /***************
     HELPER FUNCTIONS
     ***************/
+    function() external payable {}
+    
     function fairShare(uint256 balance, uint256 shares, uint256 totalSharesAndLoot) internal pure returns (uint256) {
         require(totalSharesAndLoot != 0);
 
