@@ -31,9 +31,9 @@ contract Moloch is ReentrancyGuard {
     uint256 constant MAX_TOKEN_GUILDBANK_COUNT = 200; // maximum number of tokens with non-zero balance in guildbank
 
     // BANK TOKEN DETAILS
-    string public name = "Moloch DAO v2x Bank";
-    string public symbol = "MOL-V2X";
-    uint8 public decimals = 18;
+    string private _name = "Moloch DAO v2x Bank";
+    string private _symbol = "MOL-V2X";
+    uint8 private _decimals = 18;
 
     // ***************
     // EVENTS
@@ -788,20 +788,32 @@ contract Moloch is ReentrancyGuard {
     /********************
     GUILD TOKEN FUNCTIONS
     ********************/
-    function allowance(address owner, address spender) public view returns (uint256) { // tracks guild token (loot) allowances 
+    // GETTER FUNCTIONS
+    function allowance(address owner, address spender) public view returns (uint256) {  
         return allowances[owner][spender];
     }
     
-    function approve(address spender, uint256 amount) external {
-        allowances[msg.sender][spender] = amount;
-        
-        emit Approval(msg.sender, spender, amount);
-    }
-    
-    function balanceOf(address memberAddress) public view returns (uint256) { // tracks guild token balances
+    function balanceOf(address memberAddress) public view returns (uint256) { 
         return balances[memberAddress];
     }
     
+    function name() public view returns (string memory) {
+        return _name;
+    }
+
+    function symbol() public view returns (string memory) {
+        return _symbol;
+    }
+
+    function decimals() public view returns (uint8) {
+        return _decimals;
+    }
+    
+    function totalSupply() public view returns (uint256) { 
+        return totalShares + totalLoot;
+    }
+    
+    // BALANCE MGMT FUNCTIONS
     function burnGuildToken(address memberAddress, uint256 amount) internal {
         balances[memberAddress] -= amount;
         
@@ -819,10 +831,13 @@ contract Moloch is ReentrancyGuard {
         emit Transfer(address(0), memberAddress, amount);
     }
     
-    function totalSupply() public view returns (uint256) { // tracks guild token total supply
-        return totalShares + totalLoot;
+    // LOOT TRANSFER FUNCTIONS
+    function approve(address spender, uint256 amount) external {
+        allowances[msg.sender][spender] = amount;
+        
+        emit Approval(msg.sender, spender, amount);
     }
-  
+    
     function transfer(address receiver, uint256 lootToTransfer) external {
         members[msg.sender].loot = members[msg.sender].loot.sub(lootToTransfer);
         members[receiver].loot = members[receiver].loot.add(lootToTransfer);
