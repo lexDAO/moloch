@@ -662,16 +662,8 @@ contract Moloch is ReentrancyGuard {
     /***************
     GETTER FUNCTIONS
     ***************/
-    function allowance(address owner, address spender) public view returns (uint256) { // tracks guild token (loot) allowances 
-        return allowances[owner][spender];
-    }
-    
-    function balanceOf(address memberAddress) public view returns (uint256) { // tracks guild token balances
-        return balances[memberAddress];
-    }
-    
-    function totalSupply() public view returns (uint256) { // tracks guild token total supply
-        return totalShares + totalLoot;
+    function max(uint256 x, uint256 y) internal pure returns (uint256) {
+        return x >= y ? x : y;
     }
     
     function getCurrentPeriod() public view returns (uint256) {
@@ -700,10 +692,6 @@ contract Moloch is ReentrancyGuard {
         return userTokenBalances[user][token];
     }
     
-    function max(uint256 x, uint256 y) internal pure returns (uint256) {
-        return x >= y ? x : y;
-    }
-
     /***************
     HELPER FUNCTIONS
     ***************/
@@ -739,10 +727,18 @@ contract Moloch is ReentrancyGuard {
     /********************
     GUILD TOKEN FUNCTIONS
     ********************/
+    function allowance(address owner, address spender) public view returns (uint256) { // tracks guild token (loot) allowances 
+        return allowances[owner][spender];
+    }
+    
     function approve(address spender, uint256 amount) external {
         allowances[msg.sender][spender] = amount;
         
         emit Approval(msg.sender, spender, amount);
+    }
+    
+    function balanceOf(address memberAddress) public view returns (uint256) { // tracks guild token balances
+        return balances[memberAddress];
     }
     
     function burnGuildToken(address memberAddress, uint256 amount) internal {
@@ -760,6 +756,10 @@ contract Moloch is ReentrancyGuard {
         balances[memberAddress] += amount;
         
         emit Transfer(address(0), memberAddress, amount);
+    }
+    
+    function totalSupply() public view returns (uint256) { // tracks guild token total supply
+        return totalShares + totalLoot;
     }
   
     function transfer(address receiver, uint256 lootToTransfer) external {
