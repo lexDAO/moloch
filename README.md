@@ -2,7 +2,7 @@
 [![built-with openzeppelin](https://img.shields.io/badge/built%20with-OpenZeppelin-3677FF)](https://docs.openzeppelin.com/)
 > LexDAO upgrades MolochDAO 2 v3 *ish* 🧙
 
-- Rinkeby: [0x4A5A7Da1Ba366CaFE4E738Ddc5543f65516eFf94](https://rinkeby.etherscan.io/address/0x4A5A7Da1Ba366CaFE4E738Ddc5543f65516eFf94#code)
+- Rinkeby: [0xA0D9d8003db1b90401165833daA7360B75aCb1f1](https://rinkeby.etherscan.io/address/0xA0D9d8003db1b90401165833daA7360B75aCb1f1#code)
 
 ***2X UPGRADES INCLUDE:***
 
