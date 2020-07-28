@@ -15,12 +15,12 @@ contract Moloch is ReentrancyGuard {
     address public depositToken; // deposit token contract reference; default = wETH
     address public wETH = 0xd0A1E359811322d97991E03f863a0C30C2cF029C; // wrapping contract for raw payable ether (kovan)
     
+    uint256 public proposalDeposit; // default = 10 ETH (~$1,000 worth of ETH at contract deployment)
+    uint256 public processingReward; // default = 0.1 - amount of ETH to give to whoever processes a proposal
     uint256 public periodDuration; // default = 17280 = 4.8 hours in seconds (5 periods per day)
     uint256 public votingPeriodLength; // default = 35 periods (7 days)
     uint256 public gracePeriodLength; // default = 35 periods (7 days)
-    uint256 public proposalDeposit; // default = 10 ETH (~$1,000 worth of ETH at contract deployment)
     uint256 public dilutionBound; // default = 3 - maximum multiplier a YES voter will be obligated to pay in case of mass ragequit
-    uint256 public processingReward; // default = 0.1 - amount of ETH to give to whoever processes a proposal
     uint256 public summoningTime; // needed to determine the current period
     
     // HARD-CODED LIMITS
@@ -134,18 +134,13 @@ contract Moloch is ReentrancyGuard {
         address[] memory _summoner,
         uint256[] memory _summonerShares,
         uint256 _summonerDeposit,
+        uint256 _proposalDeposit,
+        uint256 _processingReward,
         uint256 _periodDuration,
         uint256 _votingPeriodLength,
         uint256 _gracePeriodLength,
-        uint256 _proposalDeposit,
-        uint256 _dilutionBound,
-        uint256 _processingReward
+        uint256 _dilutionBound
     ) public {
-        if (_summonerDeposit > 0) {
-            totalGuildBankTokens += 1;
-            unsafeAddToBalance(GUILD, _depositToken, _summonerDeposit);
-        }
-        
         for (uint256 i = 0; i < _summoner.length; i++) {
             members[_summoner[i]] = Member(_summoner[i], 1, _summonerShares[i], 0, 0, 0);
             memberAddressByDelegateKey[_summoner[i]] = _summoner[i];
@@ -158,13 +153,18 @@ contract Moloch is ReentrancyGuard {
         tokenWhitelist[_depositToken] = true;
         approvedTokens.push(_depositToken);
         
+        if (_summonerDeposit > 0) {
+            totalGuildBankTokens += 1;
+            unsafeAddToBalance(GUILD, _depositToken, _summonerDeposit);
+        }
+        
         depositToken = _depositToken;
+        proposalDeposit = _proposalDeposit;
+        processingReward = _processingReward;
         periodDuration = _periodDuration;
         votingPeriodLength = _votingPeriodLength;
         gracePeriodLength = _gracePeriodLength;
-        proposalDeposit = _proposalDeposit;
         dilutionBound = _dilutionBound;
-        processingReward = _processingReward;
         summoningTime = now;
     }
     
