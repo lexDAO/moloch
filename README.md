@@ -2,7 +2,7 @@
 [![built-with openzeppelin](https://img.shields.io/badge/built%20with-OpenZeppelin-3677FF)](https://docs.openzeppelin.com/)
 > LexDAO upgrades MolochDAO 2 v3 *ish* 🧙
 
-- Kovan: [0xdEA73d464e9f7cb52Fd851b6427Ec5f62EabcBd5](https://kovan.etherscan.io/address/0xdEA73d464e9f7cb52Fd851b6427Ec5f62EabcBd5#code)
+- Kovan: [0x9f31BEF307d1FC0d16D4bBdd75Cb2c2712b9E177](https://kovan.etherscan.io/address/0x9f31BEF307d1FC0d16D4bBdd75Cb2c2712b9E177#code)
 
 ***2X UPGRADES INCLUDE:***
 
