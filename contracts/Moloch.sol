@@ -13,6 +13,7 @@ contract Moloch is ReentrancyGuard {
     ***************/
     address private bank = address(this);
     address public depositToken; // deposit token contract reference; default = wETH
+    address public wrapperToken; // wrapper token contract reference for voting shares
     address public wETH = 0xd0A1E359811322d97991E03f863a0C30C2cF029C; // wrapping contract for raw payable ether (kovan)
     
     uint256 public proposalDeposit; // default = 10 ETH (~$1,000 worth of ETH at contract deployment)
@@ -47,7 +48,6 @@ contract Moloch is ReentrancyGuard {
     event ProcessGuildActionProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, uint8 didPass);
     event ProcessGuildKickProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, uint8 didPass);
     event UpdateDelegateKey(address indexed memberAddress, address newDelegateKey);
-    event Approval(address indexed owner, address indexed spender, uint256 amount); // guild token (loot) allowance tracking
     event Transfer(address indexed from, address indexed to, uint256 amount); // guild token mint, burn & (loot) transfer tracking
     event Ragequit(address indexed memberAddress, uint256 sharesToBurn, uint256 lootToBurn);
     event TokensCollected(address indexed token, uint256 amountToCollect);
@@ -67,7 +67,6 @@ contract Moloch is ReentrancyGuard {
 
     mapping(uint256 => Action) public actions; // proposalId => Action
     mapping(address => uint256) private balances; // guild token balances
-    mapping (address => mapping (address => uint256)) private allowances; // guild token (loot) allowances
     mapping(address => mapping(address => uint256)) private userTokenBalances; // userTokenBalances[userAddress][tokenAddress]
 
     enum Vote {
@@ -131,6 +130,7 @@ contract Moloch is ReentrancyGuard {
     
     constructor(
         address _depositToken,
+        address _wrapperToken,
         address[] memory _summoner,
         uint256[] memory _summonerShares,
         uint256 _summonerDeposit,
@@ -159,6 +159,7 @@ contract Moloch is ReentrancyGuard {
         }
         
         depositToken = _depositToken;
+        wrapperToken = _wrapperToken;
         proposalDeposit = _proposalDeposit;
         processingReward = _processingReward;
         periodDuration = _periodDuration;
@@ -199,7 +200,7 @@ contract Moloch is ReentrancyGuard {
             require(success, "transfer failed");
             IWETH(wETH).transfer(bank, msg.value);
         } else {
-            require(IERC20(tributeToken).transferFrom(msg.sender, bank, tributeOffered), "transfer failed");
+            IERC20(tributeToken).transferFrom(msg.sender, bank, tributeOffered);
         }
         
         unsafeAddToBalance(ESCROW, tributeToken, tributeOffered);
@@ -224,7 +225,7 @@ contract Moloch is ReentrancyGuard {
         return proposalCount - 1;
     }
     
-    function submitGuildActionProposal( // stages arbitrary function calls for member vote (Raid Guild 'Minion')
+    function submitGuildActionProposal( // stages arbitrary function calls for member vote (based on Raid Guild 'Minion')
         address actionTo,
         uint256 actionValue,
         bytes calldata actionData,
@@ -301,7 +302,7 @@ contract Moloch is ReentrancyGuard {
 
     function sponsorProposal(uint256 proposalId) external nonReentrant onlyDelegate {
         // collect proposal deposit from sponsor and store it in the Moloch until the proposal is processed
-        require(IERC20(depositToken).transferFrom(msg.sender, bank, proposalDeposit), "deposit failed");
+        IERC20(depositToken).transferFrom(msg.sender, bank, proposalDeposit);
         unsafeAddToBalance(ESCROW, depositToken, proposalDeposit);
 
         Proposal storage proposal = proposals[proposalId];
@@ -421,9 +422,8 @@ contract Moloch is ReentrancyGuard {
             if (members[proposal.applicant].exists == 1) {
                 members[proposal.applicant].shares = members[proposal.applicant].shares.add(proposal.sharesRequested);
                 members[proposal.applicant].loot = members[proposal.applicant].loot.add(proposal.lootRequested);
-                mintGuildToken(proposal.applicant, proposal.sharesRequested + proposal.lootRequested);
 
-            // the applicant is a new member, create a new record for them
+            // if the applicant is a new member, create a new record for them
             } else {
                 // if the applicant address is already taken by a member's delegateKey, reset it to their member address
                 if (members[memberAddressByDelegateKey[proposal.applicant]].exists == 1) {
@@ -435,12 +435,12 @@ contract Moloch is ReentrancyGuard {
                 // use applicant address as delegateKey by default
                 members[proposal.applicant] = Member(proposal.applicant, 1, proposal.sharesRequested, proposal.lootRequested, 0, 0);
                 memberAddressByDelegateKey[proposal.applicant] = proposal.applicant;
-                mintGuildToken(proposal.applicant, proposal.sharesRequested + proposal.lootRequested);
             }
 
-            // mint new shares & loot
+            // mint new shares, loot & guild token
             totalShares += proposal.sharesRequested;
             totalLoot += proposal.lootRequested;
+            mintGuildToken(proposal.applicant, proposal.sharesRequested + proposal.lootRequested);
 
             // if the proposal tribute is the first tokens of its kind to make it into the guild bank, increment total guild bank tokens
             if (userTokenBalances[GUILD][proposal.tributeToken] == 0 && proposal.tributeOffered > 0) {
@@ -609,8 +609,8 @@ contract Moloch is ReentrancyGuard {
         uint256 sharesAndLootToBurn = sharesToBurn + lootToBurn;
 
         // burn tokens, shares and loot
-        member.shares = member.shares.sub(sharesToBurn);
-        member.loot = member.loot.sub(lootToBurn);
+        member.shares -= sharesToBurn;
+        member.loot -= lootToBurn;
         totalShares -= sharesToBurn;
         totalLoot -= lootToBurn;
         burnGuildToken(memberAddress, sharesAndLootToBurn);
@@ -658,7 +658,7 @@ contract Moloch is ReentrancyGuard {
     function _withdrawBalance(address token, uint256 amount) internal {
         require(userTokenBalances[msg.sender][token] >= amount, "insufficient balance");
         unsafeSubtractFromBalance(msg.sender, token, amount);
-        require(IERC20(token).transfer(msg.sender, amount), "transfer failed");
+        IERC20(token).transfer(msg.sender, amount);
         
         emit Withdraw(msg.sender, token, amount);
     }
@@ -790,10 +790,6 @@ contract Moloch is ReentrancyGuard {
     GUILD TOKEN FUNCTIONS
     ********************/
     // GETTER FUNCTIONS
-    function allowance(address owner, address spender) public view returns (uint256) {  
-        return allowances[owner][spender];
-    }
-    
     function balanceOf(address memberAddress) public view returns (uint256) { 
         return balances[memberAddress];
     }
@@ -832,32 +828,46 @@ contract Moloch is ReentrancyGuard {
         emit Transfer(address(0), memberAddress, amount);
     }
     
-    // LOOT TRANSFER FUNCTIONS
-    function approve(address spender, uint256 amount) external {
-        allowances[msg.sender][spender] = amount;
-        
-        emit Approval(msg.sender, spender, amount);
+    function wrapSharesToToken(uint256 amount) external {
+        members[msg.sender].shares -= amount;
+        burnGuildToken(msg.sender, amount);
+        IERC20(wrapperToken).transfer(msg.sender, amount);
     }
     
+    function wrapTokenToShares(uint256 amount) external {
+        IERC20(wrapperToken).transferFrom(msg.sender, bank, amount);
+        
+        // if the sender is already a member, add to their existing shares 
+        if (members[msg.sender].exists == 1) {
+            members[msg.sender].shares = members[msg.sender].shares.add(amount);
+
+            // if the sender is a new member, create a new record for them
+            } else {
+                // if the applicant address is already taken by a member's delegateKey, reset it to their member address
+                if (members[memberAddressByDelegateKey[msg.sender]].exists == 1) {
+                    address memberToOverride = memberAddressByDelegateKey[msg.sender];
+                    memberAddressByDelegateKey[memberToOverride] = memberToOverride;
+                    members[memberToOverride].delegateKey = memberToOverride;
+                }
+
+                // use sender address as delegateKey by default
+                members[msg.sender] = Member(msg.sender, 1, amount, 0, 0, 0);
+                memberAddressByDelegateKey[msg.sender] = msg.sender;
+            }
+
+            // mint new shares & guild token
+            totalShares += amount;
+            mintGuildToken(msg.sender, amount);
+    }
+
+    // LOOT TRANSFER FUNCTION
     function transfer(address receiver, uint256 lootToTransfer) external {
-        members[msg.sender].loot = members[msg.sender].loot.sub(lootToTransfer);
-        members[receiver].loot = members[receiver].loot.add(lootToTransfer);
+        members[msg.sender].loot -= lootToTransfer;
+        members[receiver].loot += lootToTransfer;
         
         balances[msg.sender] -= lootToTransfer;
         balances[receiver] += lootToTransfer;
         
         emit Transfer(msg.sender, receiver, lootToTransfer);
-    }
-    
-    function transferFrom(address sender, address receiver, uint256 lootToTransfer) external {
-        allowances[sender][msg.sender] -= lootToTransfer;
-        
-        members[sender].loot = members[sender].loot.sub(lootToTransfer);
-        members[receiver].loot = members[receiver].loot.add(lootToTransfer);
-        
-        balances[msg.sender] -= lootToTransfer;
-        balances[receiver] += lootToTransfer;
-        
-        emit Transfer(sender, receiver, lootToTransfer);
     }
 }
