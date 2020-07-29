@@ -27,7 +27,7 @@ contract Moloch is ReentrancyGuard {
     // HARD-CODED LIMITS
     // These numbers are quite arbitrary; they are small enough to avoid overflows when doing calculations
     // with periods or shares, yet big enough to not limit reasonable use cases.
-    uint256 constant MAX_GUILD_BOUND = (10**18)*(10**18); // maximum bound for guild shares / loot (reflects 18 decimal default)
+    uint256 constant MAX_GUILD_BOUND = (10**18)*(10**18); // maximum bound for guild shares / loot (reflects token 18 decimal default)
     uint256 constant MAX_TOKEN_WHITELIST_COUNT = 400; // maximum number of whitelisted tokens
     uint256 constant MAX_TOKEN_GUILDBANK_COUNT = 200; // maximum number of tokens with non-zero balance in guildbank
 
@@ -79,7 +79,7 @@ contract Moloch is ReentrancyGuard {
         address delegateKey; // the key responsible for submitting proposals and voting - defaults to member address unless updated
         uint8 exists; // always true (1) once a member has been created
         uint256 shares; // the # of voting shares assigned to this member
-        uint256 loot; // the loot amount available to this member (combined with shares on ragequit)
+        uint256 loot; // the loot amount available to this member (combined with shares on ragekick) / transferable by guild token
         uint256 highestIndexYesVote; // highest proposal index # on which the member voted YES
         uint256 jailed; // set to proposalIndex of a passing guild kick proposal for this member, prevents voting on and sponsoring proposals
     }
@@ -88,7 +88,7 @@ contract Moloch is ReentrancyGuard {
         address proposer; // local moloch address 
         address to; // target for call
         uint256 value; // ETH value, if any
-        bytes data; // data load to program TX
+        bytes data; // data load to stage TX
     }
 
     struct Proposal {
@@ -141,14 +141,14 @@ contract Moloch is ReentrancyGuard {
         uint256 _gracePeriodLength,
         uint256 _dilutionBound
     ) public {
+        require(_summoner.length == _summonerShares.length, "summoner & shares must match");
+        
         for (uint256 i = 0; i < _summoner.length; i++) {
-            members[_summoner[i]] = Member(_summoner[i], 1, _summonerShares[i], 0, 0, 0);
-            memberAddressByDelegateKey[_summoner[i]] = _summoner[i];
-            totalShares += _summonerShares[i];
+            registerMember(_summoner[i], _summonerShares[i]);
             mintGuildToken(_summoner[i], _summonerShares[i]);
+            totalShares += _summonerShares[i];
         }
         
-        require(_summoner.length == _summonerShares.length, "summoner & shares must match");
         require(totalShares <= MAX_GUILD_BOUND, "guild maxed");
         
         tokenWhitelist[_depositToken] = true;
@@ -432,16 +432,14 @@ contract Moloch is ReentrancyGuard {
                     memberAddressByDelegateKey[memberToOverride] = memberToOverride;
                     members[memberToOverride].delegateKey = memberToOverride;
                 }
-
-                // use applicant address as delegateKey by default
-                members[proposal.applicant] = Member(proposal.applicant, 1, proposal.sharesRequested, proposal.lootRequested, 0, 0);
-                memberAddressByDelegateKey[proposal.applicant] = proposal.applicant;
+                
+                registerMember(proposal.applicant, proposal.sharesRequested);
             }
 
-            // mint new shares, loot & guild token
+            // mint new guild token, shares, loot 
+            mintGuildToken(proposal.applicant, proposal.sharesRequested + proposal.lootRequested);
             totalShares += proposal.sharesRequested;
             totalLoot += proposal.lootRequested;
-            mintGuildToken(proposal.applicant, proposal.sharesRequested + proposal.lootRequested);
 
             // if the proposal tribute is the first tokens of its kind to make it into the guild bank, increment total guild bank tokens
             if (userTokenBalances[GUILD][proposal.tributeToken] == 0 && proposal.tributeOffered > 0) {
@@ -612,9 +610,9 @@ contract Moloch is ReentrancyGuard {
         // burn tokens, shares and loot
         member.shares -= sharesToBurn;
         member.loot -= lootToBurn;
+        burnGuildToken(memberAddress, sharesAndLootToBurn);
         totalShares -= sharesToBurn;
         totalLoot -= lootToBurn;
-        burnGuildToken(memberAddress, sharesAndLootToBurn);
 
         for (uint256 i = 0; i < approvedTokens.length; i++) {
             uint256 amountToRagequit = fairShare(userTokenBalances[GUILD][approvedTokens[i]], sharesAndLootToBurn, initialTotalSharesAndLoot);
@@ -772,6 +770,11 @@ contract Moloch is ReentrancyGuard {
         return (balance / totalSharesAndLoot) * shares;
     }
     
+    function registerMember(address newMember, uint256 shares) internal {
+        members[newMember] = Member(newMember, 1, shares, 0, 0, 0);
+        memberAddressByDelegateKey[newMember] = newMember;
+    }
+    
     function unsafeAddToBalance(address user, address token, uint256 amount) internal {
         userTokenBalances[user][token] += amount;
         userTokenBalances[TOTAL][token] += amount;
@@ -845,14 +848,12 @@ contract Moloch is ReentrancyGuard {
                     members[memberToOverride].delegateKey = memberToOverride;
                 }
 
-                // use sender address as delegateKey by default
-                members[msg.sender] = Member(msg.sender, 1, amount, 0, 0, 0);
-                memberAddressByDelegateKey[msg.sender] = msg.sender;
+                registerMember(msg.sender, amount);
             }
 
-            // mint new shares & guild token
-            totalShares += amount;
+            // mint new guild token & shares 
             mintGuildToken(msg.sender, amount);
+            totalShares += amount;
             
         if (userTokenBalances[GUILD][wrapperToken] == 0) {totalGuildBankTokens += 1;}
         unsafeAddToBalance(GUILD, wrapperToken, amount);
