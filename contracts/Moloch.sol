@@ -11,10 +11,10 @@ contract Moloch is ReentrancyGuard {
     /***************
     GLOBAL CONSTANTS
     ***************/
-    address private bank = address(this);
+    address private bank = address(this); // local moloch reference
     address public depositToken; // deposit token contract reference; default = wETH
-    address public wrapperToken; // wrapper token contract reference for voting shares
-    address public wETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // wrapping contract for raw payable ether
+    address public wrapperToken; // wrapper token contract reference for voting shares (e.g., can set as floating gov. token; wETH, to get 1:1 ongoing sale)
+    address public wETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // wrapping contract for raw payable ether 
     
     uint256 public proposalDeposit; // default = 10 ETH (~$1,000 worth of ETH at contract deployment)
     uint256 public processingReward; // default = 0.1 - amount of ETH to give to whoever processes a proposal
@@ -85,7 +85,7 @@ contract Moloch is ReentrancyGuard {
     }
     
     struct Action {
-        address proposer; // local moloch address 
+        address proposer; // local moloch  
         address to; // target for call
         uint256 value; // ETH value, if any
         bytes data; // data load to stage TX
@@ -861,8 +861,8 @@ contract Moloch is ReentrancyGuard {
 
     // LOOT TRANSFER FUNCTION
     function transfer(address receiver, uint256 lootToTransfer) external {
-        members[msg.sender].loot -= lootToTransfer;
-        members[receiver].loot += lootToTransfer;
+        members[msg.sender].loot = members[msg.sender].loot.sub(lootToTransfer);
+        members[receiver].loot = members[msg.sender].loot.add(lootToTransfer);
         
         balances[msg.sender] -= lootToTransfer;
         balances[receiver] += lootToTransfer;
