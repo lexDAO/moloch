@@ -838,7 +838,7 @@ contract Moloch is ReentrancyGuard {
 
             // if the sender is a new member, create a new record for them
             } else {
-                // if the applicant address is already taken by a member's delegateKey, reset it to their member address
+                // if the sender is already taken by a member's delegateKey, reset it to their member address
                 if (members[memberAddressByDelegateKey[msg.sender]].exists == 1) {
                     address memberToOverride = memberAddressByDelegateKey[msg.sender];
                     memberAddressByDelegateKey[memberToOverride] = memberToOverride;
