@@ -665,7 +665,7 @@ contract Moloch is ReentrancyGuard {
     }
 
     function collectTokens(address token) external nonReentrant onlyDelegate {
-        uint256 amountToCollect = IERC20(token).balanceOf(bank).sub(userTokenBalances[TOTAL][token]);
+        uint256 amountToCollect = IERC20(token).balanceOf(bank) - userTokenBalances[TOTAL][token];
         // only collect if 1) there are tokens to collect 2) token is whitelisted 3) token has non-zero balance
         require(amountToCollect > 0, "no tokens");
         require(tokenWhitelist[token], "not whitelisted");
