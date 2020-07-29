@@ -48,6 +48,7 @@ contract Moloch is ReentrancyGuard {
     event ProcessGuildActionProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, bool didPass);
     event ProcessGuildKickProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, bool didPass);
     event UpdateDelegateKey(address indexed memberAddress, address newDelegateKey);
+    event Approval(address indexed owner, address indexed spender, uint256 amount); // guild token (loot) allowance tracking
     event Transfer(address indexed from, address indexed to, uint256 amount); // guild token mint, burn & (loot) transfer tracking
     event Ragequit(address indexed memberAddress, uint256 sharesToBurn, uint256 lootToBurn);
     event TokensCollected(address indexed token, uint256 amountToCollect);
@@ -784,7 +785,15 @@ contract Moloch is ReentrancyGuard {
     }
     
     function registerMember(address newMember, uint256 shares) internal {
-        members[newMember] = Member(newMember, 1, shares, 0, 0, 0);
+        members[newMember] = Member({
+            delegateKey : newMember,
+            exists : 1, // 'true'
+            shares : shares,
+            loot : 0,
+            highestIndexYesVote : 0,
+            jailed : 0
+        });
+
         memberAddressByDelegateKey[newMember] = newMember;
     }
     
@@ -848,7 +857,7 @@ contract Moloch is ReentrancyGuard {
     function unwrapTokenToShares(uint256 amount) external nonReentrant {
         // if the sender is already a member, add to their existing shares 
         if (members[msg.sender].exists == 1) {
-            members[msg.sender].shares = members[msg.sender].shares.add(amount);
+            members[msg.sender].shares += amount;
 
             // if the sender is a new member, create a new record for them
             } else {
