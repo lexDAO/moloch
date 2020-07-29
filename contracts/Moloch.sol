@@ -43,10 +43,10 @@ contract Moloch is ReentrancyGuard {
     event CancelProposal(uint256 indexed proposalId, address applicantAddress);
     event SponsorProposal(address indexed delegateKey, address indexed memberAddress, uint256 proposalId, uint256 proposalIndex, uint256 startingPeriod);
     event SubmitVote(uint256 proposalId, uint256 indexed proposalIndex, address indexed delegateKey, address indexed memberAddress, uint8 uintVote);
-    event ProcessProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, uint8 didPass);
-    event ProcessWhitelistProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, uint8 didPass);
-    event ProcessGuildActionProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, uint8 didPass);
-    event ProcessGuildKickProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, uint8 didPass);
+    event ProcessProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, bool didPass);
+    event ProcessWhitelistProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, bool didPass);
+    event ProcessGuildActionProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, bool didPass);
+    event ProcessGuildKickProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, bool didPass);
     event UpdateDelegateKey(address indexed memberAddress, address newDelegateKey);
     event Transfer(address indexed from, address indexed to, uint256 amount); // guild token mint, burn & (loot) transfer tracking
     event Ragequit(address indexed memberAddress, uint256 sharesToBurn, uint256 lootToBurn);
@@ -398,25 +398,25 @@ contract Moloch is ReentrancyGuard {
 
         proposal.flags[1] = 1; // processed
 
-        uint8 didPass = _didPass(proposalIndex);
+        bool didPass = _didPass(proposalIndex);
 
         // Make the proposal fail if the new total number of shares and loot exceeds the limit
         if (totalSupply().add(proposal.sharesRequested).add(proposal.lootRequested) > MAX_GUILD_BOUND) {
-            didPass = 0;
+            didPass = false;
         }
 
         // Make the proposal fail if it is requesting more tokens as payment than the available guild bank balance
         if (proposal.paymentRequested > userTokenBalances[GUILD][proposal.paymentToken]) {
-            didPass = 0;
+            didPass = false;
         }
 
         // Make the proposal fail if it would result in too many tokens with non-zero balance in guild bank
         if (proposal.tributeOffered > 0 && userTokenBalances[GUILD][proposal.tributeToken] == 0 && totalGuildBankTokens >= MAX_TOKEN_GUILDBANK_COUNT) {
-           didPass = 0;
+           didPass = false;
         }
 
         // PROPOSAL PASSED
-        if (didPass == 1) {
+        if (didPass == true) {
             proposal.flags[2] = 1; // didPass
 
             // if the applicant is already a member, add to their existing shares & loot
@@ -477,13 +477,13 @@ contract Moloch is ReentrancyGuard {
 
         proposal.flags[1] = 1; // processed
 
-        uint8 didPass = _didPass(proposalIndex);
+        bool didPass = _didPass(proposalIndex);
 
         if (approvedTokens.length >= MAX_TOKEN_WHITELIST_COUNT) {
-            didPass = 0;
+            didPass = false;
         }
 
-        if (didPass == 1) {
+        if (didPass == true) {
             proposal.flags[2] = 1; // didPass
 
             tokenWhitelist[address(proposal.tributeToken)] = true;
@@ -508,9 +508,9 @@ contract Moloch is ReentrancyGuard {
 
         proposal.flags[1] = 1; // processed
 
-        uint8 didPass = _didPass(proposalIndex);
+        bool didPass = _didPass(proposalIndex);
         
-        if (didPass == 1) {
+        if (didPass == true) {
             proposal.flags[2] = 1; // didPass
             require(address(this).balance >= action.value, "insufficient eth");
             
@@ -534,9 +534,9 @@ contract Moloch is ReentrancyGuard {
 
         proposal.flags[1] = 1; // processed
 
-        uint8 didPass = _didPass(proposalIndex);
+        bool didPass = _didPass(proposalIndex);
 
-        if (didPass == 1) {
+        if (didPass == true) {
             proposal.flags[2] = 1; // didPass
             Member storage member = members[proposal.applicant];
             member.jailed = proposalIndex;
@@ -555,23 +555,23 @@ contract Moloch is ReentrancyGuard {
         emit ProcessGuildKickProposal(proposalIndex, proposalId, didPass);
     }
 
-    function _didPass(uint256 proposalIndex) internal view returns (uint8 didPass) {
+    function _didPass(uint256 proposalIndex) internal view returns (bool didPass) {
         Proposal memory proposal = proposals[proposalQueue[proposalIndex]];
         
         if (proposal.yesVotes > proposal.noVotes) {
-            didPass = 1;
+            didPass = true;
         }
         
         // Make the proposal fail if the dilutionBound is exceeded
         if ((totalSupply() * dilutionBound) < proposal.maxTotalSharesAndLootAtYesVote) {
-            didPass = 0;
+            didPass = false;
         }
 
         // Make the proposal fail if the applicant is jailed
         // - for standard proposals, we don't want the applicant to get any shares/loot/payment
         // - for guild kick proposals, we should never be able to propose to kick a jailed member (or have two kick proposals active), so it doesn't matter
         if (members[proposal.applicant].jailed != 0) {
-            didPass = 0;
+            didPass = false;
         }
 
         return didPass;
