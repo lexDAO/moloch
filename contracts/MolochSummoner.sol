@@ -5,7 +5,7 @@ import "./Moloch.sol";
 contract MolochSummoner {
     Moloch private baal;
 
-    event SummonMoloch(address indexed moloch, address depositToken, address wrapperToken, address[] indexed summoner, uint256[] indexed summonerShares, uint256 summoningDeposit, uint256 proposalDeposit, uint256 processingReward, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 dilutionBound, uint256 summoningTime);
+    event SummonMoloch(address indexed baal, address depositToken, address wrapperToken, address[] indexed summoner, uint256[] indexed summonerShares, uint256 summoningDeposit, uint256 proposalDeposit, uint256 processingReward, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 dilutionBound, uint256 summoningTime);
  
     function summonMoloch(
         address _depositToken,
@@ -32,11 +32,9 @@ contract MolochSummoner {
             _votingPeriodLength,
             _gracePeriodLength,
             _dilutionBound);
-        
-        address moloch = address(baal);
-        
-        IERC20(_depositToken).transferFrom(msg.sender, moloch, _summonerDeposit); // transfer summoner deposit to new moloch
 
-        emit SummonMoloch(moloch, _depositToken, _wrapperToken, _summoner, _summonerShares, _summonerDeposit, _proposalDeposit, _processingReward, _periodDuration, _votingPeriodLength, _gracePeriodLength, _dilutionBound, now);
+        IERC20(_depositToken).transferFrom(msg.sender, address(baal), _summonerDeposit); // transfer summoner deposit to new moloch
+
+        emit SummonMoloch(address(baal), _depositToken, _wrapperToken, _summoner, _summonerShares, _summonerDeposit, _proposalDeposit, _processingReward, _periodDuration, _votingPeriodLength, _gracePeriodLength, _dilutionBound, now);
     }
 }
