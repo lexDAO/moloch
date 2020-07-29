@@ -148,6 +148,7 @@ contract Moloch is ReentrancyGuard {
             mintGuildToken(_summoner[i], _summonerShares[i]);
         }
         
+        require(_summoner.length == _summonerShares.length, "summoner & shares must match");
         require(totalShares <= MAX_GUILD_BOUND, "guild maxed");
         
         tokenWhitelist[_depositToken] = true;
@@ -511,7 +512,7 @@ contract Moloch is ReentrancyGuard {
         
         if (didPass == 1) {
             proposal.flags[2] = 1; // didPass
-            require(address(this).balance >= action.value, "insufficient ETH");
+            require(address(this).balance >= action.value, "insufficient eth");
             
             // execute call 
             (bool success, bytes memory retData) = action.to.call.value(action.value)(action.data);
