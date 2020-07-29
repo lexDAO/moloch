@@ -76,10 +76,10 @@ contract Moloch is ReentrancyGuard {
     }
     
     struct Action {
-        address proposer;
-        address to;
-        uint256 value;
-        bytes data;
+        address proposer; // local moloch address 
+        address to; // target for call
+        uint256 value; // ETH value, if any
+        bytes data; // data load to program TX
     }
 
     struct Member {
@@ -790,19 +790,19 @@ contract Moloch is ReentrancyGuard {
     GUILD TOKEN FUNCTIONS
     ********************/
     // GETTER FUNCTIONS
-    function balanceOf(address memberAddress) public view returns (uint256) { 
+    function balanceOf(address memberAddress) external view returns (uint256) { 
         return balances[memberAddress];
     }
     
-    function name() public view returns (string memory) {
+    function name() external view returns (string memory) {
         return _name;
     }
 
-    function symbol() public view returns (string memory) {
+    function symbol() external view returns (string memory) {
         return _symbol;
     }
 
-    function decimals() public view returns (uint8) {
+    function decimals() external view returns (uint8) {
         return _decimals;
     }
     
@@ -828,13 +828,7 @@ contract Moloch is ReentrancyGuard {
         emit Transfer(address(0), memberAddress, amount);
     }
     
-    function wrapSharesToToken(uint256 amount) external {
-        members[msg.sender].shares -= amount;
-        burnGuildToken(msg.sender, amount);
-        IERC20(wrapperToken).transfer(msg.sender, amount);
-    }
-    
-    function wrapTokenToShares(uint256 amount) external {
+    function wrapTokenToShares(uint256 amount) external nonReentrant {
         IERC20(wrapperToken).transferFrom(msg.sender, bank, amount);
         
         // if the sender is already a member, add to their existing shares 
