@@ -79,7 +79,7 @@ contract Moloch is ReentrancyGuard {
         address proposer; // local moloch address 
         address to; // target for call
         uint256 value; // ETH value, if any
-        bytes data; // data load to program member action
+        bytes data; // data load to program TX
     }
 
     struct Member {
@@ -121,7 +121,7 @@ contract Moloch is ReentrancyGuard {
     
     mapping(uint256 => Proposal) public proposals;
 
-    uint256[] public proposalQueue;
+    uint256[] private proposalQueue;
 
     modifier onlyDelegate {
         require(members[memberAddressByDelegateKey[msg.sender]].shares > 0, "not delegate");
