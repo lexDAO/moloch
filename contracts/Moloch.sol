@@ -669,8 +669,9 @@ contract Moloch is ReentrancyGuard {
     
     function _withdrawBalance(address token, uint256 amount) internal {
         require(userTokenBalances[msg.sender][token] >= amount, "insufficient balance");
-        unsafeSubtractFromBalance(msg.sender, token, amount);
+        
         IERC20(token).transfer(msg.sender, amount);
+        unsafeSubtractFromBalance(msg.sender, token, amount);
         
         emit Withdraw(msg.sender, token, amount);
     }
