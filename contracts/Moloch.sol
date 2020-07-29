@@ -511,7 +511,7 @@ contract Moloch is ReentrancyGuard {
         
         if (didPass == 1) {
             proposal.flags[2] = 1; // didPass
-            require(address(this).balance >= action.value, "insufficient eth");
+            require(address(this).balance >= action.value, "insufficient ETH");
             
             // execute call 
             (bool success, bytes memory retData) = action.to.call.value(action.value)(action.data);
