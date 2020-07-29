@@ -175,7 +175,7 @@ contract Moloch is ReentrancyGuard {
     function guildBankPayment(address paymentToken, uint256 payment, bytes32 details) external {
         require(tokenWhitelist[paymentToken], "paymentToken not whitelisted");
         
-        IERC20(paymentToken).transferFrom(msg.sender, address(this), payment);
+        IERC20(paymentToken).transferFrom(msg.sender, bank, payment);
         
         if (userTokenBalances[GUILD][paymentToken] == 0) {totalGuildBankTokens += 1;}
         unsafeAddToBalance(GUILD, paymentToken, payment);
