@@ -79,7 +79,7 @@ contract Moloch is ReentrancyGuard {
         address proposer; // local moloch address 
         address to; // target for call
         uint256 value; // ETH value, if any
-        bytes data; // data load to program TX
+        bytes data; // data load to program member action
     }
 
     struct Member {
