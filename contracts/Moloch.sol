@@ -39,6 +39,7 @@ contract Moloch is ReentrancyGuard {
     // ***************
     // EVENTS
     // ***************
+    event GuildBankPayment(address indexed sender, address indexed paymentToken, uint256 indexed payment, bytes32 details);
     event SubmitProposal(address indexed applicant, uint256 sharesRequested, uint256 lootRequested, uint256 tributeOffered, address tributeToken, uint256 paymentRequested, address paymentToken, bytes32 details, uint8[7] flags, uint256 proposalId, address indexed delegateKey, address indexed memberAddress);
     event CancelProposal(uint256 indexed proposalId, address applicantAddress);
     event SponsorProposal(address indexed delegateKey, address indexed memberAddress, uint256 proposalId, uint256 proposalIndex, uint256 startingPeriod);
@@ -168,6 +169,18 @@ contract Moloch is ReentrancyGuard {
         gracePeriodLength = _gracePeriodLength;
         dilutionBound = _dilutionBound;
         summoningTime = now;
+    }
+    
+    // BASIC GUILD BANK PAYMENT FUNCTION
+    function guildBankPayment(address paymentToken, uint256 payment, bytes32 details) external {
+        require(tokenWhitelist[paymentToken], "paymentToken not whitelisted");
+        
+        IERC20(paymentToken).transferFrom(msg.sender, address(this), payment);
+        
+        if (userTokenBalances[GUILD][paymentToken] == 0) {totalGuildBankTokens += 1;}
+        unsafeAddToBalance(GUILD, paymentToken, payment);
+        
+        emit GuildBankPayment(msg.sender, paymentToken, payment, details);
     }
     
     /*****************
