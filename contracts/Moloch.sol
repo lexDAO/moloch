@@ -243,7 +243,7 @@ contract Moloch is ReentrancyGuard {
         actions[proposalId] = action;
         
         uint8[7] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
-        flags[6] = 1; // guild action
+        flags[6] = 1; // guild kick
         
         _submitProposal(bank, 0, 0, 0, address(0), 0, address(0), details, flags);
         
@@ -284,8 +284,8 @@ contract Moloch is ReentrancyGuard {
             flags : flags,
             sharesRequested : sharesRequested,
             lootRequested : lootRequested,
-            tributeOffered : tributeOffered,
             paymentRequested : paymentRequested,
+            tributeOffered : tributeOffered,
             startingPeriod : 0,
             yesVotes : 0,
             noVotes : 0,
