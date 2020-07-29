@@ -100,8 +100,8 @@ contract Moloch is ReentrancyGuard {
         uint8[7] flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
         uint256 sharesRequested; // the # of shares the applicant is requesting
         uint256 lootRequested; // the amount of loot the applicant is requesting
-        uint256 tributeOffered; // amount of tokens offered as tribute
         uint256 paymentRequested; // amount of tokens requested as payment
+        uint256 tributeOffered; // amount of tokens offered as tribute
         uint256 startingPeriod; // the period in which voting can start for this proposal
         uint256 yesVotes; // the total number of YES votes for this proposal
         uint256 noVotes; // the total number of NO votes for this proposal
@@ -244,7 +244,7 @@ contract Moloch is ReentrancyGuard {
         uint8[7] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
         flags[6] = 1; // guild kick
         
-        _submitProposal(bank, 0, 0, 0, depositToken, 0, depositToken, details, flags);
+        _submitProposal(bank, 0, 0, 0, address(0), 0, address(0), details, flags);
         
         return proposalCount - 1;
     }
