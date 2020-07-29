@@ -11,7 +11,6 @@ contract Moloch is ReentrancyGuard {
     /***************
     GLOBAL CONSTANTS
     ***************/
-    address private bank = address(this); // local moloch reference
     address public depositToken; // deposit token contract reference; default = wETH
     address public wrapperToken; // wrapper token contract reference for voting shares (e.g., can set as floating gov. token; wETH, to get 1:1 ongoing sale)
     address public wETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // wrapping contract for raw payable ether 
@@ -175,7 +174,7 @@ contract Moloch is ReentrancyGuard {
     function guildBankPayment(address paymentToken, uint256 payment, bytes32 details) external {
         require(tokenWhitelist[paymentToken], "paymentToken not whitelisted");
         
-        IERC20(paymentToken).transferFrom(msg.sender, bank, payment);
+        IERC20(paymentToken).transferFrom(msg.sender, address(this), payment);
         
         if (userTokenBalances[GUILD][paymentToken] == 0) {totalGuildBankTokens += 1;}
         unsafeAddToBalance(GUILD, paymentToken, payment);
@@ -212,9 +211,9 @@ contract Moloch is ReentrancyGuard {
             IWETH(wETH).deposit();
             (bool success, ) = wETH.call.value(msg.value)("");
             require(success, "transfer failed");
-            IWETH(wETH).transfer(bank, msg.value);
+            IWETH(wETH).transfer(address(this), msg.value);
         } else {
-            IERC20(tributeToken).transferFrom(msg.sender, bank, tributeOffered);
+            IERC20(tributeToken).transferFrom(msg.sender, address(this), tributeOffered);
         }
         
         unsafeAddToBalance(ESCROW, tributeToken, tributeOffered);
@@ -258,7 +257,7 @@ contract Moloch is ReentrancyGuard {
         uint8[7] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
         flags[6] = 1; // guild action
         
-        _submitProposal(bank, 0, 0, 0, address(0), 0, address(0), details, flags);
+        _submitProposal(address(this), 0, 0, 0, address(0), 0, address(0), details, flags);
         
         return proposalCount - 1;
     }
@@ -316,7 +315,7 @@ contract Moloch is ReentrancyGuard {
 
     function sponsorProposal(uint256 proposalId) external nonReentrant onlyDelegate {
         // collect proposal deposit from sponsor and store it in the Moloch until the proposal is processed
-        IERC20(depositToken).transferFrom(msg.sender, bank, proposalDeposit);
+        IERC20(depositToken).transferFrom(msg.sender, address(this), proposalDeposit);
         unsafeAddToBalance(ESCROW, depositToken, proposalDeposit);
 
         Proposal storage proposal = proposals[proposalId];
@@ -677,7 +676,7 @@ contract Moloch is ReentrancyGuard {
     }
 
     function collectTokens(address token) external nonReentrant onlyDelegate {
-        uint256 amountToCollect = IERC20(token).balanceOf(bank) - userTokenBalances[TOTAL][token];
+        uint256 amountToCollect = IERC20(token).balanceOf(address(this)) - userTokenBalances[TOTAL][token];
         // only collect if 1) there are tokens to collect 2) token is whitelisted 3) token has non-zero balance
         require(amountToCollect > 0, "no tokens");
         require(tokenWhitelist[token], "not whitelisted");
@@ -867,7 +866,7 @@ contract Moloch is ReentrancyGuard {
             mintGuildToken(msg.sender, amount);
             totalShares += amount;
         
-        IERC20(wrapperToken).transferFrom(msg.sender, bank, amount);
+        IERC20(wrapperToken).transferFrom(msg.sender, address(this), amount);
             
         if (userTokenBalances[GUILD][wrapperToken] == 0) {totalGuildBankTokens += 1;}
         unsafeAddToBalance(GUILD, wrapperToken, amount);
