@@ -14,7 +14,7 @@ contract Moloch is ReentrancyGuard {
     address private bank = address(this);
     address public depositToken; // deposit token contract reference; default = wETH
     address public wrapperToken; // wrapper token contract reference for voting shares
-    address public wETH = 0xd0A1E359811322d97991E03f863a0C30C2cF029C; // wrapping contract for raw payable ether (kovan)
+    address public wETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // wrapping contract for raw payable ether
     
     uint256 public proposalDeposit; // default = 10 ETH (~$1,000 worth of ETH at contract deployment)
     uint256 public processingReward; // default = 0.1 - amount of ETH to give to whoever processes a proposal
@@ -853,6 +853,9 @@ contract Moloch is ReentrancyGuard {
             // mint new shares & guild token
             totalShares += amount;
             mintGuildToken(msg.sender, amount);
+            
+        if (userTokenBalances[GUILD][wrapperToken] == 0) {totalGuildBankTokens += 1;}
+        unsafeAddToBalance(GUILD, wrapperToken, amount);
     }
 
     // LOOT TRANSFER FUNCTION
