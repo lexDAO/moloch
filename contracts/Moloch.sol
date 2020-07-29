@@ -75,13 +75,6 @@ contract Moloch is ReentrancyGuard {
         No
     }
     
-    struct Action {
-        address proposer; // local moloch address 
-        address to; // target for call
-        uint256 value; // ETH value, if any
-        bytes data; // data load to program TX
-    }
-
     struct Member {
         address delegateKey; // the key responsible for submitting proposals and voting - defaults to member address unless updated
         uint8 exists; // always true (1) once a member has been created
@@ -89,6 +82,13 @@ contract Moloch is ReentrancyGuard {
         uint256 loot; // the loot amount available to this member (combined with shares on ragequit)
         uint256 highestIndexYesVote; // highest proposal index # on which the member voted YES
         uint256 jailed; // set to proposalIndex of a passing guild kick proposal for this member, prevents voting on and sponsoring proposals
+    }
+    
+    struct Action {
+        address proposer; // local moloch address 
+        address to; // target for call
+        uint256 value; // ETH value, if any
+        bytes data; // data load to program TX
     }
 
     struct Proposal {
