@@ -854,10 +854,10 @@ contract Moloch is ReentrancyGuard {
         emit Transfer(address(0), memberAddress, amount);
     }
     
-    function unwrapTokenToShares(uint256 amount) external nonReentrant {
-        // if the sender is already a member, add to their existing shares 
+    function unwrapShares(uint256 amount) external nonReentrant {
+        // if the sender is already a member, add to their existing shares from wrapper token
         if (members[msg.sender].exists == 1) {
-            members[msg.sender].shares += amount;
+            members[msg.sender].shares = members[msg.sender].shares.add(amount);
 
             // if the sender is a new member, create a new record for them
             } else {
