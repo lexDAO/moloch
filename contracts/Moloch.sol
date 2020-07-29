@@ -829,7 +829,7 @@ contract Moloch is ReentrancyGuard {
         emit Transfer(address(0), memberAddress, amount);
     }
     
-    function wrapTokenToShares(uint256 amount) external nonReentrant {
+    function unwrapTokenToShares(uint256 amount) external nonReentrant {
         IERC20(wrapperToken).transferFrom(msg.sender, bank, amount);
         
         // if the sender is already a member, add to their existing shares 
