@@ -439,13 +439,6 @@ contract Moloch is ReentrancyGuard {
 
             // if the applicant is a new member, create a new record for them
             } else {
-                // if the applicant address is already taken by a member's delegateKey, reset it to their member address
-                if (members[memberAddressByDelegateKey[proposal.applicant]].exists == 1) {
-                    address memberToOverride = memberAddressByDelegateKey[proposal.applicant];
-                    memberAddressByDelegateKey[memberToOverride] = memberToOverride;
-                    members[memberToOverride].delegateKey = memberToOverride;
-                }
-                
                 registerMember(proposal.applicant, proposal.sharesRequested);
             }
 
@@ -785,6 +778,13 @@ contract Moloch is ReentrancyGuard {
     }
     
     function registerMember(address newMember, uint256 shares) internal {
+        // if new member is already taken by a member's delegateKey, reset it to their member address
+        if (members[memberAddressByDelegateKey[newMember]].exists == 1) {
+            address memberToOverride = memberAddressByDelegateKey[newMember];
+            memberAddressByDelegateKey[memberToOverride] = memberToOverride;
+            members[memberToOverride].delegateKey = memberToOverride;
+        }
+        
         members[newMember] = Member({
             delegateKey : newMember,
             exists : 1, // 'true'
@@ -854,20 +854,13 @@ contract Moloch is ReentrancyGuard {
         emit Transfer(address(0), memberAddress, amount);
     }
     
-    function unwrapShares(uint256 amount) external nonReentrant {
-        // if the sender is already a member, add to their existing shares from wrapper token
+    function unwrapTokenToShares(uint256 amount) external nonReentrant {
+        // if the sender is already a member, add to their existing shares 
         if (members[msg.sender].exists == 1) {
             members[msg.sender].shares = members[msg.sender].shares.add(amount);
 
             // if the sender is a new member, create a new record for them
             } else {
-                // if the sender is already taken by a member's delegateKey, reset it to their member address
-                if (members[memberAddressByDelegateKey[msg.sender]].exists == 1) {
-                    address memberToOverride = memberAddressByDelegateKey[msg.sender];
-                    memberAddressByDelegateKey[memberToOverride] = memberToOverride;
-                    members[memberToOverride].delegateKey = memberToOverride;
-                }
-
                 registerMember(msg.sender, amount);
             }
 
