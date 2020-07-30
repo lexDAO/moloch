@@ -230,7 +230,7 @@ contract Moloch is ReentrancyGuard {
         uint256 actionValue,
         bytes calldata actionData,
         bytes32 details
-    ) external returns (uint256 proposalId) {
+    ) external nonReentrant returns (uint256 proposalId) {
         
         Action memory action = Action({
             proposer: msg.sender,
@@ -387,7 +387,7 @@ contract Moloch is ReentrancyGuard {
         emit SubmitVote(proposalQueue[proposalIndex], proposalIndex, msg.sender, memberAddress, uintVote);
     }
 
-    function processProposal(uint256 proposalIndex) external {
+    function processProposal(uint256 proposalIndex) external nonReentrant {
         _validateProposalForProcessing(proposalIndex);
 
         uint256 proposalId = proposalQueue[proposalIndex];
@@ -487,7 +487,7 @@ contract Moloch is ReentrancyGuard {
         emit ProcessWhitelistProposal(proposalIndex, proposalId, didPass);
     }
 
-    function processGuildActionProposal(uint256 proposalIndex) external returns (bytes memory) {
+    function processGuildActionProposal(uint256 proposalIndex) external nonReentrant returns (bytes memory) {
         _validateProposalForProcessing(proposalIndex);
         
         uint256 proposalId = proposalQueue[proposalIndex];
