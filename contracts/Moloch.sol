@@ -12,7 +12,7 @@ contract Moloch is ReentrancyGuard {
     GLOBAL CONSTANTS
     ***************/
     address public depositToken; // deposit token contract reference; default = wETH
-    address public wrapperToken; // wrapper token contract reference for voting shares (e.g., can set as floating gov. token; wETH, to get 1:1 ongoing sale)
+    address public wrapperToken; // wrapper token contract reference for voting shares 
     address public wETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // wrapping contract for raw payable ether 
     
     uint256 public proposalDeposit; // default = 10 ETH (~$1,000 worth of ETH at contract deployment)
