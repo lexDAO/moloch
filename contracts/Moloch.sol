@@ -13,7 +13,7 @@ contract Moloch is ReentrancyGuard {
     ***************/
     address public depositToken; // deposit token contract reference; default = wETH
     address public wrapperToken; // wrapper token contract reference for voting shares 
-    address public wETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // wrapping contract for raw payable ether 
+    address public wETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // wrapper contract for raw payable ether 
     
     uint256 public proposalDeposit; // default = 10 ETH (~$1,000 worth of ETH at contract deployment)
     uint256 public processingReward; // default = 0.1 - amount of ETH to give to whoever processes a proposal
@@ -26,7 +26,7 @@ contract Moloch is ReentrancyGuard {
     // HARD-CODED LIMITS
     // These numbers are quite arbitrary; they are small enough to avoid overflows when doing calculations
     // with periods or shares, yet big enough to not limit reasonable use cases.
-    uint256 constant MAX_GUILD_BOUND = (10**18)*(10**18); // maximum bound for guild shares / loot (reflects token 18 decimal default)
+    uint256 constant MAX_GUILD_BOUND = (10**18)*(10**18); // maximum bound for guild shares / loot (reflects guild token 18 decimal default)
     uint256 constant MAX_TOKEN_WHITELIST_COUNT = 400; // maximum number of whitelisted tokens
     uint256 constant MAX_TOKEN_GUILDBANK_COUNT = 200; // maximum number of tokens with non-zero balance in guildbank
 
