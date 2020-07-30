@@ -230,7 +230,7 @@ contract Moloch is ReentrancyGuard {
         uint256 actionValue,
         bytes calldata actionData,
         bytes32 details
-    ) external nonReentrant returns (uint256 proposalId) {
+    ) external returns (uint256 proposalId) {
         
         Action memory action = Action({
             proposer: msg.sender,
@@ -349,7 +349,7 @@ contract Moloch is ReentrancyGuard {
     }
 
     // NOTE: In MolochV2 proposalIndex !== proposalId
-    function submitVote(uint256 proposalIndex, uint8 uintVote) external onlyDelegate {
+    function submitVote(uint256 proposalIndex, uint8 uintVote) external nonReentrant onlyDelegate {
         address memberAddress = memberAddressByDelegateKey[msg.sender];
         Member storage member = members[memberAddress];
 
@@ -719,7 +719,7 @@ contract Moloch is ReentrancyGuard {
     }
     
     function getCurrentPeriod() public view returns (uint256) {
-        return (now - summoningTime) / periodDuration;
+        return now.sub(summoningTime).div(periodDuration);
     }
     
     function getMemberProposalVote(address memberAddress, uint256 proposalIndex) public view returns (Vote) {
