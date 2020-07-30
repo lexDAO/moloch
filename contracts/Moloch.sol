@@ -38,7 +38,6 @@ contract Moloch is ReentrancyGuard {
     // ***************
     // EVENTS
     // ***************
-    event GuildBankPayment(address indexed sender, address indexed paymentToken, uint256 indexed payment, bytes32 details);
     event SubmitProposal(address indexed applicant, uint256 sharesRequested, uint256 lootRequested, uint256 tributeOffered, address tributeToken, uint256 paymentRequested, address paymentToken, bytes32 details, uint8[7] flags, uint256 proposalId, address indexed delegateKey, address indexed memberAddress);
     event CancelProposal(uint256 indexed proposalId, address applicantAddress);
     event SponsorProposal(address indexed delegateKey, address indexed memberAddress, uint256 proposalId, uint256 proposalIndex, uint256 startingPeriod);
@@ -169,19 +168,7 @@ contract Moloch is ReentrancyGuard {
         dilutionBound = _dilutionBound;
         summoningTime = now;
     }
-    
-    // BASIC GUILD BANK PAYMENT FUNCTION
-    function guildBankPayment(address paymentToken, uint256 payment, bytes32 details) external {
-        require(tokenWhitelist[paymentToken], "paymentToken not whitelisted");
-        
-        IERC20(paymentToken).transferFrom(msg.sender, address(this), payment);
-        
-        if (userTokenBalances[GUILD][paymentToken] == 0) {totalGuildBankTokens += 1;}
-        unsafeAddToBalance(GUILD, paymentToken, payment);
-        
-        emit GuildBankPayment(msg.sender, paymentToken, payment, details);
-    }
-    
+
     /*****************
     PROPOSAL FUNCTIONS
     *****************/
@@ -380,7 +367,7 @@ contract Moloch is ReentrancyGuard {
         proposal.votesByMember[memberAddress] = vote;
 
         if (vote == Vote.Yes) {
-            proposal.yesVotes = proposal.yesVotes + member.shares;
+            proposal.yesVotes = proposal.yesVotes.add(member.shares);
 
             // set highest index (latest) yes vote - must be processed for member to ragequit
             if (proposalIndex > member.highestIndexYesVote) {
@@ -393,7 +380,7 @@ contract Moloch is ReentrancyGuard {
             }
 
         } else if (vote == Vote.No) {
-            proposal.noVotes = proposal.noVotes + member.shares;
+            proposal.noVotes = proposal.noVotes.add(member.shares);
         }
      
         // NOTE: subgraph indexes by proposalId not proposalIndex since proposalIndex isn't set untill it's been sponsored but proposal is created on submission
@@ -566,7 +553,7 @@ contract Moloch is ReentrancyGuard {
         }
         
         // Make the proposal fail if the dilutionBound is exceeded
-        if ((totalSupply() * dilutionBound) < proposal.maxTotalSharesAndLootAtYesVote) {
+        if ((totalSupply().mul(dilutionBound)) < proposal.maxTotalSharesAndLootAtYesVote) {
             didPass = false;
         }
 
@@ -613,8 +600,8 @@ contract Moloch is ReentrancyGuard {
         uint256 sharesAndLootToBurn = sharesToBurn.add(lootToBurn);
 
         // burn tokens, shares and loot
-        member.shares -= sharesToBurn;
-        member.loot -= lootToBurn;
+        member.shares = member.shares.sub(sharesToBurn);
+        member.loot = member.loot.sub(lootToBurn);
         burnGuildToken(memberAddress, sharesAndLootToBurn);
         totalShares -= sharesToBurn;
         totalLoot -= lootToBurn;
@@ -669,14 +656,15 @@ contract Moloch is ReentrancyGuard {
     }
 
     function collectTokens(address token) external nonReentrant onlyDelegate {
-        uint256 amountToCollect = IERC20(token).balanceOf(address(this)) - userTokenBalances[TOTAL][token];
+        uint256 amountToCollect = IERC20(token).balanceOf(address(this)).sub(userTokenBalances[TOTAL][token]);
         // only collect if 1) there are tokens to collect 2) token is whitelisted 3) token has non-zero balance
         require(amountToCollect > 0, "no tokens");
         require(tokenWhitelist[token], "not whitelisted");
         require(userTokenBalances[GUILD][token] > 0, "no guild balance");
         
+        if (userTokenBalances[GUILD][token] == 0) {totalGuildBankTokens += 1;}
         unsafeAddToBalance(GUILD, token, amountToCollect);
-        
+
         emit TokensCollected(token, amountToCollect);
     }
 
