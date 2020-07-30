@@ -48,7 +48,6 @@ contract Moloch is ReentrancyGuard {
     event ProcessGuildActionProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, bool didPass);
     event ProcessGuildKickProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, bool didPass);
     event UpdateDelegateKey(address indexed memberAddress, address newDelegateKey);
-    event Approval(address indexed owner, address indexed spender, uint256 amount); // guild token (loot) allowance tracking
     event Transfer(address indexed from, address indexed to, uint256 amount); // guild token mint, burn & (loot) transfer tracking
     event Ragequit(address indexed memberAddress, uint256 sharesToBurn, uint256 lootToBurn);
     event TokensCollected(address indexed token, uint256 amountToCollect);
@@ -206,7 +205,7 @@ contract Moloch is ReentrancyGuard {
             require(totalGuildBankTokens < MAX_TOKEN_GUILDBANK_COUNT, "guildbank maxed");
         }
         
-        // collect tribute from proposer and store it in the Moloch until the proposal is processed / if ETH, wrap into wETH
+        // collect tribute from proposer and store it in the Moloch until the proposal is processed / if ether, wrap into wETH
         if (tributeToken == wETH && msg.value > 0) {
             require(msg.value == tributeOffered, "insufficient ETH");
             IWETH(wETH).deposit();
