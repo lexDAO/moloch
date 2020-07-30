@@ -168,6 +168,29 @@ contract Moloch is ReentrancyGuard {
         dilutionBound = _dilutionBound;
         summoningTime = now;
     }
+    
+    // GOVERNANCE MGMT FUNCTION
+    function updateGovernanceParams( // callable through guild action proposal
+        address _depositToken,
+        address _wrapperToken,
+        uint256 _proposalDeposit,
+        uint256 _processingReward,
+        uint256 _periodDuration,
+        uint256 _votingPeriodLength,
+        uint256 _gracePeriodLength,
+        uint256 _dilutionBound
+    ) public {
+        require(msg.sender == address(this), "not permitted");
+        
+        depositToken = _depositToken;
+        wrapperToken = _wrapperToken;
+        proposalDeposit = _proposalDeposit;
+        processingReward = _processingReward;
+        periodDuration = _periodDuration;
+        votingPeriodLength = _votingPeriodLength;
+        gracePeriodLength = _gracePeriodLength;
+        dilutionBound = _dilutionBound;
+    }
 
     /*****************
     PROPOSAL FUNCTIONS
@@ -349,7 +372,7 @@ contract Moloch is ReentrancyGuard {
     }
 
     // NOTE: In MolochV2 proposalIndex !== proposalId
-    function submitVote(uint256 proposalIndex, uint8 uintVote) external nonReentrant onlyDelegate {
+    function submitVote(uint256 proposalIndex, uint8 uintVote) external onlyDelegate {
         address memberAddress = memberAddressByDelegateKey[msg.sender];
         Member storage member = members[memberAddress];
 
@@ -387,7 +410,7 @@ contract Moloch is ReentrancyGuard {
         emit SubmitVote(proposalQueue[proposalIndex], proposalIndex, msg.sender, memberAddress, uintVote);
     }
 
-    function processProposal(uint256 proposalIndex) external nonReentrant {
+    function processProposal(uint256 proposalIndex) external {
         _validateProposalForProcessing(proposalIndex);
 
         uint256 proposalId = proposalQueue[proposalIndex];
@@ -600,8 +623,8 @@ contract Moloch is ReentrancyGuard {
         uint256 sharesAndLootToBurn = sharesToBurn.add(lootToBurn);
 
         // burn tokens, shares and loot
-        member.shares = member.shares.sub(sharesToBurn);
-        member.loot = member.loot.sub(lootToBurn);
+        member.shares -= sharesToBurn;
+        member.loot -= lootToBurn;
         burnGuildToken(memberAddress, sharesAndLootToBurn);
         totalShares -= sharesToBurn;
         totalLoot -= lootToBurn;
@@ -655,8 +678,8 @@ contract Moloch is ReentrancyGuard {
         emit Withdraw(msg.sender, token, amount);
     }
 
-    function collectTokens(address token) external nonReentrant onlyDelegate {
-        uint256 amountToCollect = IERC20(token).balanceOf(address(this)).sub(userTokenBalances[TOTAL][token]);
+    function collectTokens(address token) external onlyDelegate {
+        uint256 amountToCollect = IERC20(token).balanceOf(address(this)) - userTokenBalances[TOTAL][token];
         // only collect if 1) there are tokens to collect 2) token is whitelisted 3) token has non-zero balance
         require(amountToCollect > 0, "no tokens");
         require(tokenWhitelist[token], "not whitelisted");
