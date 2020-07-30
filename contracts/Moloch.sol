@@ -26,7 +26,7 @@ contract Moloch is ReentrancyGuard {
     // HARD-CODED LIMITS
     // These numbers are quite arbitrary; they are small enough to avoid overflows when doing calculations
     // with periods or shares, yet big enough to not limit reasonable use cases.
-    uint256 constant MAX_GUILD_BOUND = (10**36); // maximum bound for guild shares / loot (reflects guild token 18 decimal default)
+    uint256 constant MAX_GUILD_BOUND = 10**36; // maximum bound for guild shares / loot (reflects guild token 18 decimal default)
     uint256 constant MAX_TOKEN_WHITELIST_COUNT = 400; // maximum number of whitelisted tokens
     uint256 constant MAX_TOKEN_GUILDBANK_COUNT = 200; // maximum number of tokens with non-zero balance in guildbank
 
@@ -87,7 +87,7 @@ contract Moloch is ReentrancyGuard {
     struct Action {
         address proposer; // local moloch  
         address to; // target for call
-        uint256 value; // ETH value, if any
+        uint256 value; // ether value, if any
         bytes data; // data load to stage TX
     }
 
@@ -515,7 +515,7 @@ contract Moloch is ReentrancyGuard {
         
         if (didPass == true) {
             proposal.flags[2] = 1; // didPass
-            require(address(this).balance >= action.value, "insufficient eth");
+            require(address(this).balance >= action.value, "insufficient ether");
             
             // execute call 
             (bool success, bytes memory retData) = action.to.call.value(action.value)(action.data);
@@ -546,7 +546,7 @@ contract Moloch is ReentrancyGuard {
 
             // transfer shares to loot
             member.shares = 0; // revoke all shares
-            member.loot = member.loot.add(member.shares);
+            member.loot += member.shares;
             totalShares -= member.shares;
             totalLoot += member.shares;
         }
@@ -610,7 +610,7 @@ contract Moloch is ReentrancyGuard {
 
         require(canRagequit(member.highestIndexYesVote), "cannot ragequit until highest index proposal member voted YES on is processed");
 
-        uint256 sharesAndLootToBurn = sharesToBurn + lootToBurn;
+        uint256 sharesAndLootToBurn = sharesToBurn.add(lootToBurn);
 
         // burn tokens, shares and loot
         member.shares -= sharesToBurn;
