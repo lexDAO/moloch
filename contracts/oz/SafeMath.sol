@@ -15,7 +15,7 @@ library SafeMath { // wrappers over solidity arithmetic operations with added ov
         return c;
     }
     
-   function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
         if (a == 0) {
             return 0;
         }
@@ -24,5 +24,12 @@ library SafeMath { // wrappers over solidity arithmetic operations with added ov
         require(c / a == b);
 
         return c;
-    }  
+    }
+
+    function div(uint256 a, uint256 b) internal pure returns (uint256) {
+        require(b > 0);
+        uint256 c = a / b;
+
+        return c;
+    }
 }
