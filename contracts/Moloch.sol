@@ -865,6 +865,8 @@ contract Moloch is ReentrancyGuard {
     }
     
     function unwrapShares(uint256 amount) external nonReentrant {
+        IERC20(wrapperToken).transferFrom(msg.sender, address(this), amount);
+        
         // if the sender is already a member, add to their existing shares 
         if (members[msg.sender].exists == 1) {
             members[msg.sender].shares = members[msg.sender].shares.add(amount);
@@ -877,9 +879,7 @@ contract Moloch is ReentrancyGuard {
             // mint new guild token & shares 
             mintGuildToken(msg.sender, amount);
             totalShares += amount;
-        
-        IERC20(wrapperToken).transferFrom(msg.sender, address(this), amount);
-            
+
         if (userTokenBalances[GUILD][wrapperToken] == 0) {totalGuildBankTokens += 1;}
         unsafeAddToBalance(GUILD, wrapperToken, amount);
     }
