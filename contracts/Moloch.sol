@@ -26,7 +26,7 @@ contract Moloch is ReentrancyGuard {
     // HARD-CODED LIMITS
     // These numbers are quite arbitrary; they are small enough to avoid overflows when doing calculations
     // with periods or shares, yet big enough to not limit reasonable use cases.
-    uint256 constant MAX_GUILD_BOUND = (10**18)*(10**18); // maximum bound for guild shares / loot (reflects guild token 18 decimal default)
+    uint256 constant MAX_GUILD_BOUND = (10**36); // maximum bound for guild shares / loot (reflects guild token 18 decimal default)
     uint256 constant MAX_TOKEN_WHITELIST_COUNT = 400; // maximum number of whitelisted tokens
     uint256 constant MAX_TOKEN_GUILDBANK_COUNT = 200; // maximum number of tokens with non-zero balance in guildbank
 
