@@ -84,10 +84,9 @@ contract Moloch is ReentrancyGuard {
     }
     
     struct Action {
-        address proposer; // local moloch  
-        address to; // target for call
+        address to; // target for function call
         uint256 value; // ether value, if any
-        bytes data; // data load to stage TX
+        bytes data; // data load for function call
     }
 
     struct Proposal {
@@ -287,11 +286,9 @@ contract Moloch is ReentrancyGuard {
         // collect action data
         if (proposal.flags[6] == 1) {
             Action memory action = Action({
-                proposer : msg.sender,
                 to : applicant,
                 value : paymentRequested,
                 data : actionData
-                
             });
                 
             actions[proposalCount] = action;
@@ -434,7 +431,7 @@ contract Moloch is ReentrancyGuard {
             }
 
             // mint new guild token, shares, loot 
-            mintGuildToken(proposal.applicant, proposal.sharesRequested + proposal.lootRequested);
+            mintGuildToken(proposal.applicant, proposal.sharesRequested.add(proposal.lootRequested));
             totalShares += proposal.sharesRequested;
             totalLoot += proposal.lootRequested;
 
@@ -661,7 +658,7 @@ contract Moloch is ReentrancyGuard {
     }
 
     function collectTokens(address token) external onlyDelegate {
-        uint256 amountToCollect = IERC20(token).balanceOf(address(this)) - userTokenBalances[TOTAL][token];
+        uint256 amountToCollect = IERC20(token).balanceOf(address(this)).sub(userTokenBalances[TOTAL][token]);
         // only collect if 1) there are tokens to collect 2) token is whitelisted 3) token has non-zero balance
         require(amountToCollect > 0, "no tokens");
         require(tokenWhitelist[token], "not whitelisted");
@@ -713,7 +710,7 @@ contract Moloch is ReentrancyGuard {
     }
 
     function hasVotingPeriodExpired(uint256 startingPeriod) public view returns (bool) {
-        return getCurrentPeriod() >= startingPeriod + votingPeriodLength;
+        return getCurrentPeriod() >= startingPeriod.add(votingPeriodLength);
     }
     
     /***************
