@@ -169,29 +169,6 @@ contract Moloch is ReentrancyGuard {
         summoningTime = now;
     }
     
-    // GOVERNANCE MGMT FUNCTION
-    function updateGovernanceParams( // callable through guild action proposal
-        address _depositToken,
-        address _wrapperToken,
-        uint256 _proposalDeposit,
-        uint256 _processingReward,
-        uint256 _periodDuration,
-        uint256 _votingPeriodLength,
-        uint256 _gracePeriodLength,
-        uint256 _dilutionBound
-    ) public {
-        require(msg.sender == address(this), "not permitted");
-        
-        depositToken = _depositToken;
-        wrapperToken = _wrapperToken;
-        proposalDeposit = _proposalDeposit;
-        processingReward = _processingReward;
-        periodDuration = _periodDuration;
-        votingPeriodLength = _votingPeriodLength;
-        gracePeriodLength = _gracePeriodLength;
-        dilutionBound = _dilutionBound;
-    }
-
     /*****************
     PROPOSAL FUNCTIONS
     *****************/
@@ -223,14 +200,14 @@ contract Moloch is ReentrancyGuard {
             require(success, "transfer failed");
             IWETH(wETH).transfer(address(this), msg.value);
         } else {
-            IERC20(tributeToken).transferFrom(msg.sender, address(this), tributeOffered);
+            require(IERC20(tributeToken).transferFrom(msg.sender, address(this), tributeOffered), "transfer failed");
         }
         
         unsafeAddToBalance(ESCROW, tributeToken, tributeOffered);
 
         uint8[7] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
 
-        _submitProposal(applicant, sharesRequested, lootRequested, tributeOffered, tributeToken, paymentRequested, paymentToken, details, flags);
+        _submitProposal(applicant, sharesRequested, lootRequested, tributeOffered, tributeToken, paymentRequested, paymentToken, details, flags, "");
         
         return proposalCount - 1; // return proposalId - contracts calling submit might want it
     }
@@ -243,7 +220,7 @@ contract Moloch is ReentrancyGuard {
         uint8[7] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
         flags[4] = 1; // whitelist
 
-        _submitProposal(address(0), 0, 0, 0, tokenToWhitelist, 0, address(0), details, flags);
+        _submitProposal(address(0), 0, 0, 0, tokenToWhitelist, 0, address(0), details, flags, "");
         
         return proposalCount - 1;
     }
@@ -255,19 +232,10 @@ contract Moloch is ReentrancyGuard {
         bytes32 details
     ) external returns (uint256 proposalId) {
         
-        Action memory action = Action({
-            proposer: msg.sender,
-            to: actionTo,
-            value: actionValue,
-            data: actionData
-        });
-        
-        actions[proposalId] = action;
-        
         uint8[7] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
         flags[6] = 1; // guild action
         
-        _submitProposal(address(this), 0, 0, 0, address(0), 0, address(0), details, flags);
+        _submitProposal(actionTo, 0, 0, 0, address(0), actionValue, address(0), details, flags, actionData);
         
         return proposalCount - 1;
     }
@@ -281,7 +249,7 @@ contract Moloch is ReentrancyGuard {
         uint8[7] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
         flags[5] = 1; // guild kick
 
-        _submitProposal(memberToKick, 0, 0, 0, address(0), 0, address(0), details, flags);
+        _submitProposal(memberToKick, 0, 0, 0, address(0), 0, address(0), details, flags, "");
         
         return proposalCount - 1;
     }
@@ -295,7 +263,8 @@ contract Moloch is ReentrancyGuard {
         uint256 paymentRequested,
         address paymentToken,
         bytes32 details,
-        uint8[7] memory flags
+        uint8[7] memory flags,
+        bytes memory actionData
     ) internal {
         Proposal memory proposal = Proposal({
             applicant : applicant,
@@ -315,6 +284,19 @@ contract Moloch is ReentrancyGuard {
             details : details
         });
         
+        // collect action data
+        if (proposal.flags[6] == 1) {
+            Action memory action = Action({
+                proposer : msg.sender,
+                to : applicant,
+                value : paymentRequested,
+                data : actionData
+                
+            });
+                
+            actions[proposalCount] = action;
+        }
+        
         proposals[proposalCount] = proposal;
         address memberAddress = memberAddressByDelegateKey[msg.sender];
         // NOTE: argument order matters, avoid stack too deep
@@ -325,7 +307,7 @@ contract Moloch is ReentrancyGuard {
 
     function sponsorProposal(uint256 proposalId) external nonReentrant onlyDelegate {
         // collect proposal deposit from sponsor and store it in the Moloch until the proposal is processed
-        IERC20(depositToken).transferFrom(msg.sender, address(this), proposalDeposit);
+        require(IERC20(depositToken).transferFrom(msg.sender, address(this), proposalDeposit), "transfer failed");
         unsafeAddToBalance(ESCROW, depositToken, proposalDeposit);
 
         Proposal storage proposal = proposals[proposalId];
@@ -390,7 +372,7 @@ contract Moloch is ReentrancyGuard {
         proposal.votesByMember[memberAddress] = vote;
 
         if (vote == Vote.Yes) {
-            proposal.yesVotes = proposal.yesVotes.add(member.shares);
+            proposal.yesVotes = proposal.yesVotes + member.shares;
 
             // set highest index (latest) yes vote - must be processed for member to ragequit
             if (proposalIndex > member.highestIndexYesVote) {
@@ -403,7 +385,7 @@ contract Moloch is ReentrancyGuard {
             }
 
         } else if (vote == Vote.No) {
-            proposal.noVotes = proposal.noVotes.add(member.shares);
+            proposal.noVotes = proposal.noVotes + member.shares;
         }
      
         // NOTE: subgraph indexes by proposalId not proposalIndex since proposalIndex isn't set untill it's been sponsored but proposal is created on submission
@@ -416,7 +398,7 @@ contract Moloch is ReentrancyGuard {
         uint256 proposalId = proposalQueue[proposalIndex];
         Proposal storage proposal = proposals[proposalId];
 
-        require(proposal.flags[4] == 0 && proposal.flags[5] == 0, "not standard proposal");
+        require(proposal.flags[4] == 0 && proposal.flags[5] == 0 && proposal.flags[6] == 0, "not standard proposal");
 
         proposal.flags[1] = 1; // processed
 
@@ -510,7 +492,7 @@ contract Moloch is ReentrancyGuard {
         emit ProcessWhitelistProposal(proposalIndex, proposalId, didPass);
     }
 
-    function processGuildActionProposal(uint256 proposalIndex) external nonReentrant returns (bytes memory) {
+    function processGuildActionProposal(uint256 proposalIndex) external returns (bytes memory) {
         _validateProposalForProcessing(proposalIndex);
         
         uint256 proposalId = proposalQueue[proposalIndex];
@@ -672,7 +654,7 @@ contract Moloch is ReentrancyGuard {
     function _withdrawBalance(address token, uint256 amount) internal {
         require(userTokenBalances[msg.sender][token] >= amount, "insufficient balance");
         
-        IERC20(token).transfer(msg.sender, amount);
+        require(IERC20(token).transfer(msg.sender, amount), "transfer failed");
         unsafeSubtractFromBalance(msg.sender, token, amount);
         
         emit Withdraw(msg.sender, token, amount);
@@ -843,7 +825,7 @@ contract Moloch is ReentrancyGuard {
     }
     
     function totalSupply() public view returns (uint256) { 
-        return totalShares + totalLoot;
+        return totalShares.add(totalLoot);
     }
     
     // BALANCE MGMT FUNCTIONS
@@ -865,7 +847,7 @@ contract Moloch is ReentrancyGuard {
     }
     
     function unwrapShares(uint256 amount) external nonReentrant {
-        IERC20(wrapperToken).transferFrom(msg.sender, address(this), amount);
+        require(IERC20(wrapperToken).transferFrom(msg.sender, address(this), amount), "transfer failed");
         
         // if the sender is already a member, add to their existing shares 
         if (members[msg.sender].exists == 1) {
