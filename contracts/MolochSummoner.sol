@@ -33,7 +33,7 @@ contract MolochSummoner {
             _gracePeriodLength,
             _dilutionBound);
 
-        IERC20(_depositToken).transferFrom(msg.sender, address(baal), _summonerDeposit); // transfer summoner deposit to new moloch
+        require(IERC20(_depositToken).transferFrom(msg.sender, address(baal), _summonerDeposit), "transfer failed"); // transfer summoner deposit to new moloch
 
         emit SummonMoloch(address(baal), _depositToken, _wrapperToken, _summoner, _summonerShares, _summonerDeposit, _proposalDeposit, _processingReward, _periodDuration, _votingPeriodLength, _gracePeriodLength, _dilutionBound, now);
     }
