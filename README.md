@@ -2,7 +2,7 @@
 [![built-with openzeppelin](https://img.shields.io/badge/built%20with-OpenZeppelin-3677FF)](https://docs.openzeppelin.com/)
 > LexDAO upgrades MolochDAO 2 v3 *ish* 🧙
 
-- Mainnet: [0xab534d4BdcAaf6D6a706F9F2b225D58cf3AC8025](https://etherscan.io/address/0x298B6d3317bbF3B35C2BCE91756f4bf9e0F456FB#code)
+- Mainnet: [0x5B237b7baBFC0709440Af54a4e88BdBABc4A15B6](https://etherscan.io/address/0x5B237b7baBFC0709440Af54a4e88BdBABc4A15B6#code)
 
 ***2X UPGRADES INCLUDE:***
 
@@ -15,8 +15,11 @@
 * **Guild Tokens** 🏵️ 
 > guild shares/loot are tokenized with basic ERC-20 interface (approve, transfer, transferFrom) / loot is freely transferable (members should respect guild/jxd rules)
 
-* **Ether contributions** 🍬 
+* **Ether Contributions** 🍬 
 > guild proposals can wrap raw Ether into tokenized wETH
+
+* **Embedded Minion** 👺
+> member votes can trigger arbitrary function calls (e.g., *deposit guild funds into Compound*), based on Raid Guild `Minion`
 
 ***misc:***
 * minion upgrades to conform to v2x 👺
