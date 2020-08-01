@@ -3,6 +3,9 @@
 > LexDAO upgrades MolochDAO 2 v3 *ish* 🧙
 
 - Mainnet: [0xd7e6078FAb2746B2E4525Bb6CBffEd04347Aa075](https://etherscan.io/address/0xd7e6078FAb2746B2E4525Bb6CBffEd04347Aa075#code)
+- xDai: [0xebC9B5Dc2dAed4256fd29A50a65f0dffd526C6EF](https://blockscout.com/poa/xdai/address/0xebC9B5Dc2dAed4256fd29A50a65f0dffd526C6EF/contracts)
+- Rinkeby: [0xF3944f4182344CbeF2AE1d3e72Da3278A5B96B83](https://rinkeby.etherscan.io/address/0xF3944f4182344CbeF2AE1d3e72Da3278A5B96B83#code)
+- Ropsten: [0x512b7C2Ca3DD370d84F7cBC363185FaB9E4b7faf](https://ropsten.etherscan.io/address/0x512b7C2Ca3DD370d84F7cBC363185FaB9E4b7faf#code)
 
 ***2X UPGRADES INCLUDE:***
 
