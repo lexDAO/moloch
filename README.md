@@ -21,11 +21,7 @@
 * **Embedded Minion** 👺
 > member votes can trigger arbitrary function calls (e.g., *deposit guild funds into Compound*), based on Raid Guild `Minion`
 
-***misc:***
-* minion upgrades to conform to v2x 👺
-* most recent [OpenZeppelin contracts](https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/contracts) w/ trimmed comments / error msgs.
-* housekeeping updates to remove warnings: [PR](https://github.com/MolochVentures/moloch/pull/86)
-* gas/size savings measures / etc.
+v2x also reflect various code squash updates to save size for new functions, remove redundant references, and reduce gas costs throughout. 
 
 STEAL THIS CODE
 
