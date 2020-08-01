@@ -38,7 +38,7 @@ contract Moloch is ReentrancyGuard {
     // ***************
     // EVENTS
     // ***************
-    event SubmitProposal(address indexed applicant, uint256 sharesRequested, uint256 lootRequested, uint256 tributeOffered, address tributeToken, uint256 paymentRequested, address paymentToken, bytes32 details, uint8[7] flags, uint256 proposalId, address indexed delegateKey, address indexed memberAddress);
+    event SubmitProposal(address indexed applicant, uint256 sharesRequested, uint256 lootRequested, uint256 tributeOffered, address tributeToken, uint256 paymentRequested, address paymentToken, bytes32 details, uint8[7] flags, bytes actionData, uint256 proposalId, address indexed delegateKey, address indexed memberAddress);
     event CancelProposal(uint256 indexed proposalId, address applicantAddress);
     event SponsorProposal(address indexed delegateKey, address indexed memberAddress, uint256 proposalId, uint256 proposalIndex, uint256 startingPeriod);
     event SubmitVote(uint256 proposalId, uint256 indexed proposalIndex, address indexed delegateKey, address indexed memberAddress, uint8 uintVote);
@@ -297,7 +297,7 @@ contract Moloch is ReentrancyGuard {
         proposals[proposalCount] = proposal;
         address memberAddress = memberAddressByDelegateKey[msg.sender];
         // NOTE: argument order matters, avoid stack too deep
-        emit SubmitProposal(applicant, sharesRequested, lootRequested, tributeOffered, tributeToken, paymentRequested, paymentToken, details, flags, proposalCount, msg.sender, memberAddress);
+        emit SubmitProposal(applicant, sharesRequested, lootRequested, tributeOffered, tributeToken, paymentRequested, paymentToken, details, flags, actionData, proposalCount, msg.sender, memberAddress);
         
         proposalCount += 1;
     }
@@ -385,7 +385,7 @@ contract Moloch is ReentrancyGuard {
             proposal.noVotes = proposal.noVotes + member.shares;
         }
      
-        // NOTE: subgraph indexes by proposalId not proposalIndex since proposalIndex isn't set untill it's been sponsored but proposal is created on submission
+        // NOTE: subgraph indexes by proposalId not proposalIndex since proposalIndex isn't set until it's been sponsored but proposal is created on submission
         emit SubmitVote(proposalQueue[proposalIndex], proposalIndex, msg.sender, memberAddress, uintVote);
     }
 
@@ -413,7 +413,7 @@ contract Moloch is ReentrancyGuard {
 
         // Make the proposal fail if it would result in too many tokens with non-zero balance in guild bank
         if (proposal.tributeOffered > 0 && userTokenBalances[GUILD][proposal.tributeToken] == 0 && totalGuildBankTokens >= MAX_TOKEN_GUILDBANK_COUNT) {
-           didPass = false;
+            didPass = false;
         }
 
         // PROPOSAL PASSED
@@ -422,8 +422,8 @@ contract Moloch is ReentrancyGuard {
 
             // if the applicant is already a member, add to their existing shares & loot
             if (members[proposal.applicant].exists == 1) {
-                members[proposal.applicant].shares = members[proposal.applicant].shares.add(proposal.sharesRequested);
-                members[proposal.applicant].loot = members[proposal.applicant].loot.add(proposal.lootRequested);
+                members[proposal.applicant].shares = members[proposal.applicant].shares + proposal.sharesRequested;
+                members[proposal.applicant].loot = members[proposal.applicant].loot + proposal.lootRequested;
 
             // if the applicant is a new member, create a new record for them
             } else {
@@ -431,7 +431,7 @@ contract Moloch is ReentrancyGuard {
             }
 
             // mint new guild token, shares, loot 
-            mintGuildToken(proposal.applicant, proposal.sharesRequested.add(proposal.lootRequested));
+            mintGuildToken(proposal.applicant, proposal.sharesRequested + proposal.lootRequested);
             totalShares += proposal.sharesRequested;
             totalLoot += proposal.lootRequested;
 
@@ -504,7 +504,6 @@ contract Moloch is ReentrancyGuard {
         
         if (didPass == true) {
             proposal.flags[2] = 1; // didPass
-            require(address(this).balance >= action.value, "insufficient ether");
             
             // execute call 
             (bool success, bytes memory retData) = action.to.call.value(action.value)(action.data);
@@ -658,7 +657,7 @@ contract Moloch is ReentrancyGuard {
     }
 
     function collectTokens(address token) external onlyDelegate {
-        uint256 amountToCollect = IERC20(token).balanceOf(address(this)).sub(userTokenBalances[TOTAL][token]);
+        uint256 amountToCollect = IERC20(token).balanceOf(address(this)) - userTokenBalances[TOTAL][token];
         // only collect if 1) there are tokens to collect 2) token is whitelisted 3) token has non-zero balance
         require(amountToCollect > 0, "no tokens");
         require(tokenWhitelist[token], "not whitelisted");
@@ -710,7 +709,7 @@ contract Moloch is ReentrancyGuard {
     }
 
     function hasVotingPeriodExpired(uint256 startingPeriod) public view returns (bool) {
-        return getCurrentPeriod() >= startingPeriod.add(votingPeriodLength);
+        return getCurrentPeriod() >= startingPeriod + votingPeriodLength;
     }
     
     /***************
@@ -822,7 +821,7 @@ contract Moloch is ReentrancyGuard {
     }
     
     function totalSupply() public view returns (uint256) { 
-        return totalShares.add(totalLoot);
+        return totalShares + totalLoot;
     }
     
     // BALANCE MGMT FUNCTIONS
@@ -830,6 +829,28 @@ contract Moloch is ReentrancyGuard {
         balances[memberAddress] -= amount;
         
         emit Transfer(memberAddress, address(0), amount);
+    }
+    
+    function claimShares(uint256 amount) external nonReentrant {
+        require(IERC20(wrapperToken).transferFrom(msg.sender, address(this), amount), "transfer failed");
+        
+        // if the sender is already a member, add to their existing shares 
+        if (members[msg.sender].exists == 1) {
+            members[msg.sender].shares = members[msg.sender].shares.add(amount);
+
+            // if the sender is a new member, create a new record for them
+            } else {
+                registerMember(msg.sender, amount);
+            }
+
+        // mint new guild token & shares 
+        mintGuildToken(msg.sender, amount);
+        totalShares += amount;
+            
+        require(totalShares <= MAX_GUILD_BOUND, "guild maxed");
+
+        if (userTokenBalances[GUILD][wrapperToken] == 0) {totalGuildBankTokens += 1;}
+        unsafeAddToBalance(GUILD, wrapperToken, amount);
     }
     
     function convertSharesToLoot(uint256 sharesToLoot) external {
@@ -842,31 +863,11 @@ contract Moloch is ReentrancyGuard {
         
         emit Transfer(address(0), memberAddress, amount);
     }
-    
-    function unwrapShares(uint256 amount) external nonReentrant {
-        require(IERC20(wrapperToken).transferFrom(msg.sender, address(this), amount), "transfer failed");
-        
-        // if the sender is already a member, add to their existing shares 
-        if (members[msg.sender].exists == 1) {
-            members[msg.sender].shares = members[msg.sender].shares.add(amount);
-
-            // if the sender is a new member, create a new record for them
-            } else {
-                registerMember(msg.sender, amount);
-            }
-
-            // mint new guild token & shares 
-            mintGuildToken(msg.sender, amount);
-            totalShares += amount;
-
-        if (userTokenBalances[GUILD][wrapperToken] == 0) {totalGuildBankTokens += 1;}
-        unsafeAddToBalance(GUILD, wrapperToken, amount);
-    }
 
     // LOOT TRANSFER FUNCTION
     function transfer(address receiver, uint256 lootToTransfer) external {
         members[msg.sender].loot = members[msg.sender].loot.sub(lootToTransfer);
-        members[receiver].loot = members[msg.sender].loot.add(lootToTransfer);
+        members[receiver].loot = members[receiver].loot.add(lootToTransfer);
         
         balances[msg.sender] -= lootToTransfer;
         balances[receiver] += lootToTransfer;
