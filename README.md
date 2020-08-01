@@ -2,7 +2,7 @@
 [![built-with openzeppelin](https://img.shields.io/badge/built%20with-OpenZeppelin-3677FF)](https://docs.openzeppelin.com/)
 > LexDAO upgrades MolochDAO 2 v3 *ish* 🧙
 
-- Mainnet: [0x5B237b7baBFC0709440Af54a4e88BdBABc4A15B6](https://etherscan.io/address/0x5B237b7baBFC0709440Af54a4e88BdBABc4A15B6#code)
+- Mainnet: [0xd7e6078FAb2746B2E4525Bb6CBffEd04347Aa075](https://etherscan.io/address/0xd7e6078FAb2746B2E4525Bb6CBffEd04347Aa075#code)
 
 ***2X UPGRADES INCLUDE:***
 
