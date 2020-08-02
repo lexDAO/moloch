@@ -7,6 +7,12 @@
 - Rinkeby: [0xF3944f4182344CbeF2AE1d3e72Da3278A5B96B83](https://rinkeby.etherscan.io/address/0xF3944f4182344CbeF2AE1d3e72Da3278A5B96B83#code)
 - Ropsten: [0x512b7C2Ca3DD370d84F7cBC363185FaB9E4b7faf](https://ropsten.etherscan.io/address/0x512b7C2Ca3DD370d84F7cBC363185FaB9E4b7faf#code)
 
+demo deployments:
+
+* anjDAO (ANJ holders can wrap into Moloch v2x guild; join LexDAO arbitration protocols): 🦅🍬 [0x5B237b7baBFC0709440Af54a4e88BdBABc4A15B6](https://etherscan.io/address/0x5B237b7baBFC0709440Af54a4e88BdBABc4A15B6#code)
+
+* LexDAO Coop. cloned on xDAI: ⚡ [0xD5db7aC9dd7b41491273E04F5446EE0cB7BBe906](https://blockscout.com/poa/xdai/address/0xD5db7aC9dd7b41491273E04F5446EE0cB7BBe906/contracts)
+
 ***2X UPGRADES INCLUDE:***
 
 * **Summoning Circle** 🔥 👹👹👹 🔥
