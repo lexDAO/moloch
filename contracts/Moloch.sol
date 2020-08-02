@@ -656,14 +656,14 @@ contract Moloch is ReentrancyGuard {
         emit Withdraw(msg.sender, token, amount);
     }
 
-    function collectTokens(address token) external onlyDelegate {
+    // Can be used for payments or to collect whitelisted tokens sent to the DAO 
+    function collectTokens(address token) external  {
         uint256 amountToCollect = IERC20(token).balanceOf(address(this)) - userTokenBalances[TOTAL][token];
-        // only collect if 1) there are tokens to collect 2) token is whitelisted 3) token has non-zero balance
+        // only collect if 1) there are tokens to collect and 2) token is whitelisted
         require(amountToCollect > 0, "no tokens");
         require(tokenWhitelist[token], "not whitelisted");
-        require(userTokenBalances[GUILD][token] > 0, "no guild balance");
         
-        if (userTokenBalances[GUILD][token] == 0) {totalGuildBankTokens += 1;}
+        if (userTokenBalances[GUILD][token] == 0 && totalGuildBankTokens < MAX_TOKEN_GUILDBANK_COUNT) {totalGuildBankTokens += 1;}
         unsafeAddToBalance(GUILD, token, amountToCollect);
 
         emit TokensCollected(token, amountToCollect);
