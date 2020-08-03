@@ -656,7 +656,6 @@ contract Moloch is ReentrancyGuard {
         emit Withdraw(msg.sender, token, amount);
     }
 
-    // can be used for payments or to collect whitelisted tokens sent to the DAO 
     function collectTokens(address token) external {
         uint256 amountToCollect = IERC20(token).balanceOf(address(this)) - userTokenBalances[TOTAL][token];
         // only collect if 1) there are tokens to collect and 2) token is whitelisted
