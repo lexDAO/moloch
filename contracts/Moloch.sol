@@ -803,8 +803,8 @@ contract Moloch is ReentrancyGuard {
     GUILD TOKEN FUNCTIONS
     ********************/
     // GETTER FUNCTIONS
-    function balanceOf(address memberAddress) external view returns (uint256) { 
-        return balances[memberAddress];
+    function balanceOf(address account) external view returns (uint256) { 
+        return balances[account];
     }
     
     function name() external view returns (string memory) {
