@@ -5,14 +5,14 @@ import "./oz/IERC20.sol";
 import "./oz/ReentrancyGuard.sol";
 import "./IWETH.sol";
 
-contract Moloch is ReentrancyGuard {
+contract MysticMoloch is ReentrancyGuard { 
     using SafeMath for uint256;
 
     /***************
     GLOBAL CONSTANTS
     ***************/
     address public depositToken; // deposit token contract reference; default = wETH
-    address public wrapperToken; // wrapper token contract reference for guild shares 
+    address public voteToken; // wrapper token contract reference for guild voting shares 
     address public wETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // canonical ether token wrapper contract reference
     
     uint256 public proposalDeposit; // default = 10 ETH (~$1,000 worth of ETH at contract deployment)
@@ -55,7 +55,7 @@ contract Moloch is ReentrancyGuard {
     // *******************
     // INTERNAL ACCOUNTING
     // *******************
-    address public constant GUILD = address(0xdead);
+    address public constant GUILD = address(0xfeed);
     address public constant ESCROW = address(0xbeef);
     address public constant TOTAL = address(0xbabe);
     
@@ -85,8 +85,8 @@ contract Moloch is ReentrancyGuard {
     
     struct Action {
         address to; // target for function call
-        uint256 value; // ether value, if any
-        bytes data; // data load for function call
+        uint256 value; // ether value in function call, if any
+        bytes data; // raw data for function call
     }
 
     struct Proposal {
@@ -128,7 +128,7 @@ contract Moloch is ReentrancyGuard {
     
     constructor(
         address _depositToken,
-        address _wrapperToken,
+        address _voteToken,
         address[] memory _summoner,
         uint256[] memory _summonerShares,
         uint256 _summonerDeposit,
@@ -139,8 +139,6 @@ contract Moloch is ReentrancyGuard {
         uint256 _gracePeriodLength,
         uint256 _dilutionBound
     ) public {
-        require(_summoner.length == _summonerShares.length, "summoner & shares must match");
-        
         for (uint256 i = 0; i < _summoner.length; i++) {
             registerMember(_summoner[i], _summonerShares[i]);
             mintGuildToken(_summoner[i], _summonerShares[i]);
@@ -158,7 +156,7 @@ contract Moloch is ReentrancyGuard {
         }
         
         depositToken = _depositToken;
-        wrapperToken = _wrapperToken;
+        voteToken = _voteToken;
         proposalDeposit = _proposalDeposit;
         processingReward = _processingReward;
         periodDuration = _periodDuration;
@@ -213,6 +211,7 @@ contract Moloch is ReentrancyGuard {
     
     function submitWhitelistProposal(address tokenToWhitelist, bytes32 details) external returns (uint256 proposalId) {
         require(tokenToWhitelist != address(0), "need token");
+        require(tokenToWhitelist != voteToken, "whitelist/voteToken match");
         require(!tokenWhitelist[tokenToWhitelist], "already whitelisted");
         require(approvedTokens.length < MAX_TOKEN_WHITELIST_COUNT, "whitelist maxed");
 
@@ -369,7 +368,7 @@ contract Moloch is ReentrancyGuard {
         proposal.votesByMember[memberAddress] = vote;
 
         if (vote == Vote.Yes) {
-            proposal.yesVotes = proposal.yesVotes + member.shares;
+            proposal.yesVotes += member.shares;
 
             // set highest index (latest) yes vote - must be processed for member to ragequit
             if (proposalIndex > member.highestIndexYesVote) {
@@ -382,7 +381,7 @@ contract Moloch is ReentrancyGuard {
             }
 
         } else if (vote == Vote.No) {
-            proposal.noVotes = proposal.noVotes + member.shares;
+            proposal.noVotes += member.shares;
         }
      
         // NOTE: subgraph indexes by proposalId not proposalIndex since proposalIndex isn't set until it's been sponsored but proposal is created on submission
@@ -422,8 +421,8 @@ contract Moloch is ReentrancyGuard {
 
             // if the applicant is already a member, add to their existing shares & loot
             if (members[proposal.applicant].exists == 1) {
-                members[proposal.applicant].shares = members[proposal.applicant].shares + proposal.sharesRequested;
-                members[proposal.applicant].loot = members[proposal.applicant].loot + proposal.lootRequested;
+                members[proposal.applicant].shares += proposal.sharesRequested;
+                members[proposal.applicant].loot += proposal.lootRequested;
 
             // if the applicant is a new member, create a new record for them
             } else {
@@ -831,7 +830,7 @@ contract Moloch is ReentrancyGuard {
     }
     
     function claimShares(uint256 amount) external nonReentrant {
-        require(IERC20(wrapperToken).transferFrom(msg.sender, address(this), amount), "transfer failed");
+        require(IERC20(voteToken).transferFrom(msg.sender, address(0xdead), amount), "transfer failed"); // burn vote wrapper token and claim shares (1:1)
         
         // if the sender is already a member, add to their existing shares 
         if (members[msg.sender].exists == 1) {
@@ -847,9 +846,6 @@ contract Moloch is ReentrancyGuard {
         totalShares += amount;
             
         require(totalShares <= MAX_GUILD_BOUND, "guild maxed");
-
-        if (userTokenBalances[GUILD][wrapperToken] == 0 && totalGuildBankTokens < MAX_TOKEN_GUILDBANK_COUNT) {totalGuildBankTokens += 1;}
-        unsafeAddToBalance(GUILD, wrapperToken, amount);
     }
     
     function convertSharesToLoot(uint256 sharesToLoot) external {
