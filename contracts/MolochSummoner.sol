@@ -2,14 +2,14 @@ pragma solidity 0.5.17;
 
 import "./Moloch.sol";
 
-contract MolochSummoner {
-    Moloch private baal;
+contract MysticMolochSummoner { 
+    MysticMoloch private baal;
 
-    event SummonMoloch(address indexed baal, address depositToken, address wrapperToken, address[] indexed summoner, uint256[] indexed summonerShares, uint256 summoningDeposit, uint256 proposalDeposit, uint256 processingReward, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 dilutionBound, uint256 summoningTime);
+    event SummonMoloch(address indexed baal, address depositToken, address voteToken, address[] indexed summoner, uint256[] indexed summonerShares, uint256 summoningDeposit, uint256 proposalDeposit, uint256 processingReward, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 dilutionBound, uint256 summoningTime);
  
     function summonMoloch(
         address _depositToken,
-        address _wrapperToken,
+        address _voteToken,
         address[] memory _summoner,
         uint256[] memory _summonerShares,
         uint256 _summonerDeposit,
@@ -20,9 +20,13 @@ contract MolochSummoner {
         uint256 _gracePeriodLength,
         uint256 _dilutionBound
     ) public {
-        baal = new Moloch(
+        require(_depositToken != _voteToken, "deposit/voteToken match");
+        require(_summoner.length == _summonerShares.length, "summoner/shares mismatch");
+        require(IERC20(_depositToken).transferFrom(msg.sender, address(baal), _summonerDeposit), "transfer failed"); // transfer summoner deposit to new moloch
+        
+        baal = new MysticMoloch(
             _depositToken,
-            _wrapperToken,
+            _voteToken,
             _summoner,
             _summonerShares,
             _summonerDeposit,
@@ -33,8 +37,6 @@ contract MolochSummoner {
             _gracePeriodLength,
             _dilutionBound);
 
-        require(IERC20(_depositToken).transferFrom(msg.sender, address(baal), _summonerDeposit), "transfer failed"); // transfer summoner deposit to new moloch
-
-        emit SummonMoloch(address(baal), _depositToken, _wrapperToken, _summoner, _summonerShares, _summonerDeposit, _proposalDeposit, _processingReward, _periodDuration, _votingPeriodLength, _gracePeriodLength, _dilutionBound, now);
+        emit SummonMoloch(address(baal), _depositToken, _voteToken, _summoner, _summonerShares, _summonerDeposit, _proposalDeposit, _processingReward, _periodDuration, _votingPeriodLength, _gracePeriodLength, _dilutionBound, now);
     }
 }
