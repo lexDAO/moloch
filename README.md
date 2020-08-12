@@ -11,6 +11,10 @@ demo deployments:
 
 * anjDAO (ANJ holders can wrap into Moloch v2x guild; join LexDAO arbitration protocols): 🦅🍬 [0x4B807Cf48E49D86BbBbbFc07D9C48719A7103f3e](https://etherscan.io/address/0x4B807Cf48E49D86BbBbbFc07D9C48719A7103f3e#code)
 
+misc:
+
+* test LP (minion) deposits on rinkeby testnet with our LPtest contract: [0x222661a74373afd9d629618a9f0ab8632fedf0d3](https://rinkeby.etherscan.io/address/0x222661a74373afd9d629618a9f0ab8632fedf0d3#code)
+
 ***2X UPGRADES INCLUDE:***
 
 * **Summoning Circle** 🔥 👹👹👹 🔥
