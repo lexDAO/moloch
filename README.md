@@ -3,9 +3,9 @@
 > LexDAO upgrades MolochDAO 2 v3 *ish* 🧙
 
 - Mainnet: [0x40C90ec89dd4C814E91594d7AA02E9c70fFE4DF1](https://etherscan.io/address/0x40C90ec89dd4C814E91594d7AA02E9c70fFE4DF1#code)
-- xDai: [0xebC9B5Dc2dAed4256fd29A50a65f0dffd526C6EF](https://blockscout.com/poa/xdai/address/0xebC9B5Dc2dAed4256fd29A50a65f0dffd526C6EF/contracts)
+- xDai: [0xb068b8eb483d7c3468144c5d3c141fc00660dcec](https://blockscout.com/poa/xdai/address/0xb068b8eb483d7c3468144c5d3c141fc00660dcec/contracts)
+- IDChain: [0xe09433Ae4ffD29B3C673b4c7ea796c65906872d0](https://explorer.idchain.one/address/0xe09433Ae4ffD29B3C673b4c7ea796c65906872d0/contracts)
 - Rinkeby: [0x8bd70dA40aDe30662c9cf492A4EbAA7e1a65Df44](https://rinkeby.etherscan.io/address/0x8bd70dA40aDe30662c9cf492A4EbAA7e1a65Df44#code)
-- Ropsten: [0x512b7C2Ca3DD370d84F7cBC363185FaB9E4b7faf](https://ropsten.etherscan.io/address/0x512b7C2Ca3DD370d84F7cBC363185FaB9E4b7faf#code)
 
 demo deployments:
 
