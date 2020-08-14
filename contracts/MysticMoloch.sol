@@ -349,7 +349,7 @@ contract MysticMoloch is ReentrancyGuard {
         require(proposalIndex < proposalQueue.length, "unproposed");
         Proposal storage proposal = proposals[proposalQueue[proposalIndex]];
 
-        require(uintVote < 3, "not < 3");
+        require(uintVote < 3, "!< 3");
         Vote vote = Vote(uintVote);
 
         require(getCurrentPeriod() >= proposal.startingPeriod, "voting pending");
