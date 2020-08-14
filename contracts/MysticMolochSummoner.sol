@@ -20,8 +20,6 @@ contract MysticMolochSummoner {
         uint256 _gracePeriodLength,
         uint256 _dilutionBound
     ) public {
-        require(IERC20(_depositToken).transferFrom(msg.sender, address(baal), _summonerDeposit), "transfer failed"); // transfer summoner deposit to new moloch
-        
         baal = new MysticMoloch(
             _depositToken,
             _voteToken,
@@ -34,6 +32,8 @@ contract MysticMolochSummoner {
             _votingPeriodLength,
             _gracePeriodLength,
             _dilutionBound);
+        
+        require(IERC20(_depositToken).transferFrom(msg.sender, address(baal), _summonerDeposit), "transfer failed"); // transfer summoner deposit to new moloch
 
         emit SummonMoloch(address(baal), _depositToken, _voteToken, _summoner, _summonerShares, _summonerDeposit, _proposalDeposit, _processingReward, _periodDuration, _votingPeriodLength, _gracePeriodLength, _dilutionBound, now);
     }
