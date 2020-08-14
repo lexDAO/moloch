@@ -75,12 +75,12 @@ contract MysticMoloch is ReentrancyGuard {
     }
     
     struct Member {
-        address delegateKey; // the key responsible for submitting proposals and voting - defaults to member address unless updated
+        address delegateKey; // the key responsible for submitting proposals & voting - defaults to member address unless updated
         uint8 exists; // always true (1) once a member has been created
         uint256 shares; // the # of voting shares assigned to this member
         uint256 loot; // the loot amount available to this member (combined with shares on ragekick) / transferable by guild token
         uint256 highestIndexYesVote; // highest proposal index # on which the member voted YES
-        uint256 jailed; // set to proposalIndex of a passing guild kick proposal for this member, prevents voting on and sponsoring proposals
+        uint256 jailed; // set to proposalIndex of a passing guild kick proposal for this member, prevents voting on & sponsoring proposals
     }
     
     struct Proposal {
@@ -828,7 +828,7 @@ contract MysticMoloch is ReentrancyGuard {
     }
     
     function claimShares(uint256 amount) external nonReentrant {
-        require(IERC20(voteToken).transferFrom(msg.sender, address(0xdead), amount), "transfer failed"); // burn vote wrapper token and claim shares (1:1)
+        require(IERC20(voteToken).transferFrom(msg.sender, address(0xdead), amount), "transfer failed"); // burn vote wrapper token & claim shares (1:1)
         
         // if the sender is already a member, add to their existing shares 
         if (members[msg.sender].exists == 1) {
