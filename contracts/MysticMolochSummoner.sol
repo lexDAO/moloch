@@ -5,7 +5,7 @@ import "./Moloch.sol";
 contract MysticMolochSummoner { 
     MysticMoloch private baal;
 
-    event SummonMoloch(address indexed baal, address depositToken, address voteToken, address[] indexed summoner, uint256[] indexed summonerShares, uint256 summoningDeposit, uint256 proposalDeposit, uint256 processingReward, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 dilutionBound, uint256 summoningTime);
+    event SummonMoloch(address indexed baal, address depositToken, address voteToken, address[] summoner, uint256[] summonerShares, uint256 summoningDeposit, uint256 proposalDeposit, uint256 processingReward, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 dilutionBound, uint256 summoningTime);
  
     function summonMoloch(
         address _depositToken,
