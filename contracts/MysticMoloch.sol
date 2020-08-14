@@ -116,7 +116,7 @@ contract MysticMoloch is ReentrancyGuard {
     uint256[] private proposalQueue;
 
     modifier onlyDelegate {
-        require(members[memberAddressByDelegateKey[msg.sender]].shares > 0, "not delegate");
+        require(members[memberAddressByDelegateKey[msg.sender]].shares > 0, "!delegate");
         _;
     }
     
@@ -177,8 +177,8 @@ contract MysticMoloch is ReentrancyGuard {
         bytes32 details
     ) payable external nonReentrant returns (uint256 proposalId) {
         require(sharesRequested.add(lootRequested) <= MAX_GUILD_BOUND, "guild maxed");
-        require(tokenWhitelist[tributeToken], "tributeToken not whitelisted");
-        require(tokenWhitelist[paymentToken], "paymentToken not whitelisted");
+        require(tokenWhitelist[tributeToken], "tributeToken !whitelisted");
+        require(tokenWhitelist[paymentToken], "paymentToken !whitelisted");
         require(applicant != GUILD && applicant != ESCROW && applicant != TOTAL, "applicant unreservable");
         require(members[applicant].jailed == 0, "applicant jailed");
 
