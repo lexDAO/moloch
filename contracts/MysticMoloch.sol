@@ -186,7 +186,7 @@ contract MysticMoloch is ReentrancyGuard {
             require(totalGuildBankTokens < MAX_TOKEN_GUILDBANK_COUNT, "guildbank maxed");
         }
         
-        // collect tribute from proposer and store it in the Moloch until the proposal is processed / if ether, wrap into wETH
+        // collect tribute from proposer & store it in the Moloch until the proposal is processed / if ether, wrap into wETH
         if (tributeToken == wETH && msg.value > 0) {
             require(msg.value == tributeOffered, "insufficient ETH");
             IWETH(wETH).deposit();
@@ -294,7 +294,7 @@ contract MysticMoloch is ReentrancyGuard {
     }
 
     function sponsorProposal(uint256 proposalId) external nonReentrant onlyDelegate {
-        // collect proposal deposit from sponsor and store it in the Moloch until the proposal is processed
+        // collect proposal deposit from sponsor & store it in the Moloch until the proposal is processed
         require(IERC20(depositToken).transferFrom(msg.sender, address(this), proposalDeposit), "transfer failed");
         unsafeAddToBalance(ESCROW, depositToken, proposalDeposit);
 
