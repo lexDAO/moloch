@@ -38,7 +38,7 @@ contract MysticMoloch is ReentrancyGuard {
     // ***************
     // EVENTS
     // ***************
-    event SubmitProposal(address indexed applicant, uint256 sharesRequested, uint256 lootRequested, uint256 tributeOffered, address tributeToken, uint256 paymentRequested, address paymentToken, bytes32 details, uint8[6] flags, bytes actionData, uint256 proposalId, address indexed delegateKey, address indexed memberAddress);
+    event SubmitProposal(address indexed applicant, uint256 sharesRequested, uint256 lootRequested, uint256 tributeOffered, address tributeToken, uint256 paymentRequested, address paymentToken, bytes32 details, uint8[7] flags, bytes actionData, uint256 proposalId, address indexed delegateKey, address indexed memberAddress);
     event CancelProposal(uint256 indexed proposalId, address applicantAddress);
     event SponsorProposal(address indexed delegateKey, address indexed memberAddress, uint256 proposalId, uint256 proposalIndex, uint256 startingPeriod);
     event SubmitVote(uint256 proposalId, uint256 indexed proposalIndex, address indexed delegateKey, address indexed memberAddress, uint8 uintVote);
@@ -64,6 +64,7 @@ contract MysticMoloch is ReentrancyGuard {
     uint256 public totalLoot; // total loot across all members
     uint256 public totalGuildBankTokens; // total tokens with non-zero balance in guild bank
 
+    mapping(uint256 => Action) public actions; // proposalId => Action
     mapping(address => uint256) private balances; // guild token balances
     mapping(address => mapping(address => uint256)) private userTokenBalances; // userTokenBalances[userAddress][tokenAddress]
 
@@ -82,13 +83,19 @@ contract MysticMoloch is ReentrancyGuard {
         uint256 jailed; // set to proposalIndex of a passing guild kick proposal for this member, prevents voting on and sponsoring proposals
     }
     
+    struct Action {
+        address to; // target for function call
+        uint256 value; // ether value in function call, if any
+        bytes data; // raw data for function call
+    }
+
     struct Proposal {
         address applicant; // the applicant who wishes to become a member - this key will be used for withdrawals (doubles as guild kick target for gkick proposals)
         address proposer; // the account that submitted the proposal (can be non-member)
         address sponsor; // the member that sponsored the proposal (moving it into the queue)
         address tributeToken; // tribute token contract reference
         address paymentToken; // payment token contract reference
-        uint8[6] flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick]
+        uint8[7] flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
         uint256 sharesRequested; // the # of shares the applicant is requesting
         uint256 lootRequested; // the amount of loot the applicant is requesting
         uint256 paymentRequested; // amount of tokens requested as payment
@@ -97,7 +104,6 @@ contract MysticMoloch is ReentrancyGuard {
         uint256 yesVotes; // the total number of YES votes for this proposal
         uint256 noVotes; // the total number of NO votes for this proposal
         uint256 maxTotalSharesAndLootAtYesVote; // the maximum # of total shares encountered at a yes vote on this proposal
-        bytes actionData; 
         bytes32 details; // proposal details to add context for members 
         mapping(address => Vote) votesByMember; // the votes on this proposal by each member
     }
@@ -199,7 +205,7 @@ contract MysticMoloch is ReentrancyGuard {
         
         unsafeAddToBalance(ESCROW, tributeToken, tributeOffered);
 
-        uint8[6] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
+        uint8[7] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
 
         _submitProposal(applicant, sharesRequested, lootRequested, tributeOffered, tributeToken, paymentRequested, paymentToken, details, flags, "");
         
@@ -212,7 +218,7 @@ contract MysticMoloch is ReentrancyGuard {
         require(!tokenWhitelist[tokenToWhitelist], "already whitelisted");
         require(approvedTokens.length < MAX_TOKEN_WHITELIST_COUNT, "whitelist maxed");
 
-        uint8[6] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick]
+        uint8[7] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
         flags[4] = 1; // whitelist
 
         _submitProposal(address(0), 0, 0, 0, tokenToWhitelist, 0, address(0), details, flags, "");
@@ -220,13 +226,28 @@ contract MysticMoloch is ReentrancyGuard {
         return proposalCount - 1;
     }
     
+    function submitGuildActionProposal( // stages arbitrary function calls for member vote (based on Raid Guild 'Minion')
+        address actionTo,
+        uint256 actionValue,
+        bytes calldata actionData,
+        bytes32 details
+    ) external returns (uint256 proposalId) {
+        
+        uint8[7] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
+        flags[6] = 1; // guild action
+        
+        _submitProposal(actionTo, 0, 0, 0, address(0), actionValue, address(0), details, flags, actionData);
+        
+        return proposalCount - 1;
+    }
+
     function submitGuildKickProposal(address memberToKick, bytes32 details) external returns (uint256 proposalId) {
         Member memory member = members[memberToKick];
 
         require(member.shares > 0 || member.loot > 0, "must have share or loot");
         require(members[memberToKick].jailed == 0, "already jailed");
 
-        uint8[6] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick]
+        uint8[7] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
         flags[5] = 1; // guild kick
 
         _submitProposal(memberToKick, 0, 0, 0, address(0), 0, address(0), details, flags, "");
@@ -243,7 +264,7 @@ contract MysticMoloch is ReentrancyGuard {
         uint256 paymentRequested,
         address paymentToken,
         bytes32 details,
-        uint8[6] memory flags,
+        uint8[7] memory flags,
         bytes memory actionData
     ) internal {
         Proposal memory proposal = Proposal({
@@ -261,9 +282,19 @@ contract MysticMoloch is ReentrancyGuard {
             yesVotes : 0,
             noVotes : 0,
             maxTotalSharesAndLootAtYesVote : 0,
-            actionData : actionData,
             details : details
         });
+        
+        // collect action data
+        if (proposal.flags[6] == 1) {
+            Action memory action = Action({
+                to : applicant,
+                value : paymentRequested,
+                data : actionData
+            });
+                
+            actions[proposalCount] = action;
+        }
         
         proposals[proposalCount] = proposal;
         address memberAddress = memberAddressByDelegateKey[msg.sender];
@@ -366,7 +397,7 @@ contract MysticMoloch is ReentrancyGuard {
         uint256 proposalId = proposalQueue[proposalIndex];
         Proposal storage proposal = proposals[proposalId];
 
-        require(proposal.flags[4] == 0 && proposal.flags[5] == 0, "not standard proposal");
+        require(proposal.flags[4] == 0 && proposal.flags[5] == 0 && proposal.flags[6] == 0, "not standard proposal");
 
         proposal.flags[1] = 1; // processed
 
@@ -458,6 +489,32 @@ contract MysticMoloch is ReentrancyGuard {
         _returnDeposit(proposal.sponsor);
         
         emit ProcessWhitelistProposal(proposalIndex, proposalId, didPass);
+    }
+
+    function processGuildActionProposal(uint256 proposalIndex) external returns (bytes memory) {
+        _validateProposalForProcessing(proposalIndex);
+        
+        uint256 proposalId = proposalQueue[proposalIndex];
+        Action storage action = actions[proposalId];
+        Proposal storage proposal = proposals[proposalId];
+        
+        require(proposal.flags[6] == 1, "not action proposal");
+
+        proposal.flags[1] = 1; // processed
+
+        bool didPass = _didPass(proposalIndex);
+        
+        if (didPass == true) {
+            proposal.flags[2] = 1; // didPass
+            
+            // execute call 
+            (bool success, bytes memory retData) = action.to.call.value(action.value)(action.data);
+            require(success, "call failure");
+            
+            return retData;
+        }
+        
+        emit ProcessGuildActionProposal(proposalIndex, proposalId, didPass);
     }
 
     function processGuildKickProposal(uint256 proposalIndex) external {
@@ -674,7 +731,7 @@ contract MysticMoloch is ReentrancyGuard {
         return proposals[proposalQueue[proposalIndex]].votesByMember[memberAddress];
     }
 
-    function getProposalFlags(uint256 proposalId) public view returns (uint8[6] memory) {
+    function getProposalFlags(uint256 proposalId) public view returns (uint8[7] memory) {
         return proposals[proposalId].flags;
     }
     
