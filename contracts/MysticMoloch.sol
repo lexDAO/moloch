@@ -392,7 +392,7 @@ contract MysticMoloch is ReentrancyGuard {
 
         bool didPass = _didPass(proposalIndex);
 
-        // Make the proposal fail if the new total number of shares and loot exceeds the limit
+        // Make the proposal fail if the new total number of shares & loot exceeds the limit
         if (totalSupply().add(proposal.sharesRequested).add(proposal.lootRequested) > MAX_GUILD_BOUND) {
             didPass = false;
         }
@@ -597,7 +597,7 @@ contract MysticMoloch is ReentrancyGuard {
 
         uint256 sharesAndLootToBurn = sharesToBurn.add(lootToBurn);
 
-        // burn guild token, shares and loot
+        // burn guild token, shares & loot
         burnGuildToken(memberAddress, sharesAndLootToBurn);
         member.shares -= sharesToBurn;
         member.loot -= lootToBurn;
