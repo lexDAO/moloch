@@ -12,7 +12,7 @@ contract MysticMoloch is ReentrancyGuard {
     GLOBAL CONSTANTS
     ***************/
     address public depositToken; // deposit token contract reference; default = wETH
-    address public voteToken; // wrapper token contract reference for guild voting shares 
+    address public voteToken; // stake token contract reference for guild voting shares 
     address public wETH = 0xc778417E063141139Fce010982780140Aa0cD5Ab; // canonical ether token wrapper contract reference
     
     uint256 public proposalDeposit; // default = 10 ETH (~$1,000 worth of ETH at contract deployment)
