@@ -13,10 +13,10 @@ contract MysticMoloch is ReentrancyGuard {
     ***************/
     address public depositToken; // deposit token contract reference; default = wETH
     address public stakeToken; // stake token contract reference for guild voting shares 
-    address public wETH = 0xc778417E063141139Fce010982780140Aa0cD5Ab; // canonical ether token wrapper contract reference
+    address public wETH = 0xc778417E063141139Fce010982780140Aa0cD5Ab; // canonical ether token wrapper contract reference for proposals
     
-    uint256 public proposalDeposit; // default = 10 ETH (~$1,000 worth of ETH at contract deployment)
-    uint256 public processingReward; // default = 0.1 - amount of ETH to give to whoever processes a proposal
+    uint256 public proposalDeposit; // default = 10 deposit token 
+    uint256 public processingReward; // default = 0.1 - amount of deposit token to give to whoever processes a proposal
     uint256 public periodDuration; // default = 17280 = 4.8 hours in seconds (5 periods per day)
     uint256 public votingPeriodLength; // default = 35 periods (7 days)
     uint256 public gracePeriodLength; // default = 35 periods (7 days)
@@ -84,7 +84,7 @@ contract MysticMoloch is ReentrancyGuard {
     }
     
     struct Proposal {
-        address applicant; // the applicant who wishes to become a member - this key will be used for withdrawals (doubles as guild kick target for gkick proposals)
+        address applicant; // the applicant who wishes to become a member - this key will be used for withdrawals (doubles as target for alt. proposals)
         address proposer; // the account that submitted the proposal (can be non-member)
         address sponsor; // the member that sponsored the proposal (moving it into the queue)
         address tributeToken; // tribute token contract reference
@@ -134,7 +134,7 @@ contract MysticMoloch is ReentrancyGuard {
         uint256 _dilutionBound
     ) public {
         require(_depositToken != _stakeToken, "depositToken==stakeToken");
-        require(_summoner.length == _summonerShares.length, "summoner!=shares length");
+        require(_summoner.length == _summonerShares.length, "summoner!=summonerShares");
         
         for (uint256 i = 0; i < _summoner.length; i++) {
             registerMember(_summoner[i], _summonerShares[i]);
@@ -294,7 +294,7 @@ contract MysticMoloch is ReentrancyGuard {
 
     function sponsorProposal(uint256 proposalId) external nonReentrant onlyDelegate {
         // collect proposal deposit from sponsor & store it in the Moloch until the proposal is processed
-        require(IERC20(depositToken).transferFrom(msg.sender, address(this), proposalDeposit), "transfer failed");
+        require(IERC20(depositToken).transferFrom(msg.sender, address(this), proposalDeposit), "!transfer");
         unsafeAddToBalance(ESCROW, depositToken, proposalDeposit);
 
         Proposal storage proposal = proposals[proposalId];
@@ -569,8 +569,8 @@ contract MysticMoloch is ReentrancyGuard {
         Proposal memory proposal = proposals[proposalQueue[proposalIndex]];
 
         require(getCurrentPeriod() >= proposal.startingPeriod + votingPeriodLength + gracePeriodLength, "!ready");
-        require(proposal.flags[1] == 0, "proposal already processed");
-        require(proposalIndex == 0 || proposals[proposalQueue[proposalIndex - 1]].flags[1] == 1, "previous !unprocessed");
+        require(proposal.flags[1] == 0, "processed");
+        require(proposalIndex == 0 || proposals[proposalQueue[proposalIndex - 1]].flags[1] == 1, "prior !processed");
     }
 
     function _returnDeposit(address sponsor) internal {
@@ -592,7 +592,7 @@ contract MysticMoloch is ReentrancyGuard {
         require(member.shares >= sharesToBurn, "insufficient shares");
         require(member.loot >= lootToBurn, "insufficient loot");
 
-        require(canRagequit(member.highestIndexYesVote), "cannot ragequit until highest index proposal member voted YES on processes");
+        require(canRagequit(member.highestIndexYesVote), "!ragequit until highest index proposal member voted YES processes");
 
         uint256 sharesAndLootToBurn = sharesToBurn.add(lootToBurn);
 
@@ -620,8 +620,8 @@ contract MysticMoloch is ReentrancyGuard {
         Member storage member = members[memberToKick];
 
         require(member.jailed != 0, "!jailed");
-        require(member.loot > 0, "no loot"); // note - should be impossible for jailed member to have shares
-        require(canRagequit(member.highestIndexYesVote), "cannot ragequit until highest index proposal member voted YES on is processed");
+        require(member.loot > 0, "!loot"); // note - should be impossible for jailed member to have shares
+        require(canRagequit(member.highestIndexYesVote), "!ragequit until highest index proposal member voted YES processes");
 
         _ragequit(memberToKick, 0, member.loot);
     }
@@ -644,7 +644,7 @@ contract MysticMoloch is ReentrancyGuard {
     }
     
     function _withdrawBalance(address token, uint256 amount) internal {
-        require(userTokenBalances[msg.sender][token] >= amount, "insufficient balance");
+        require(userTokenBalances[msg.sender][token] >= amount, "!balance");
         
         require(IERC20(token).transfer(msg.sender, amount), "!transfer");
         unsafeSubtractFromBalance(msg.sender, token, amount);
@@ -654,8 +654,8 @@ contract MysticMoloch is ReentrancyGuard {
 
     function collectTokens(address token) external {
         uint256 amountToCollect = IERC20(token).balanceOf(address(this)).sub(userTokenBalances[TOTAL][token]);
-        // only collect if 1) there are tokens to collect and 2) token is whitelisted
-        require(amountToCollect > 0, "no tokens");
+        // only collect if 1) there are tokens to collect & 2) token is whitelisted
+        require(amountToCollect > 0, "!amount");
         require(tokenWhitelist[token], "!whitelisted");
         
         if (userTokenBalances[GUILD][token] == 0 && totalGuildBankTokens < MAX_TOKEN_GUILDBANK_COUNT) {totalGuildBankTokens += 1;}
@@ -698,7 +698,7 @@ contract MysticMoloch is ReentrancyGuard {
     
     // can only ragequit if the latest proposal you voted YES on has been processed
     function canRagequit(uint256 highestIndexYesVote) public view returns (bool) {
-        require(highestIndexYesVote < proposalQueue.length, "no such proposal");
+        require(highestIndexYesVote < proposalQueue.length, "!proposal");
         
         return proposals[proposalQueue[highestIndexYesVote]].flags[1] == 1;
     }
