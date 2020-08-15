@@ -12,7 +12,7 @@ contract MysticMoloch is ReentrancyGuard {
     GLOBAL CONSTANTS
     ***************/
     address public depositToken; // deposit token contract reference; default = wETH
-    address public voteToken; // stake token contract reference for guild voting shares 
+    address public stakeToken; // stake token contract reference for guild voting shares 
     address public wETH = 0xc778417E063141139Fce010982780140Aa0cD5Ab; // canonical ether token wrapper contract reference
     
     uint256 public proposalDeposit; // default = 10 ETH (~$1,000 worth of ETH at contract deployment)
@@ -55,9 +55,9 @@ contract MysticMoloch is ReentrancyGuard {
     // *******************
     // INTERNAL ACCOUNTING
     // *******************
-    address public constant GUILD = address(0xfeed);
-    address public constant ESCROW = address(0xbeef);
-    address public constant TOTAL = address(0xbabe);
+    address public constant GUILD = address(0xdead);
+    address public constant ESCROW = address(0xdeaf);
+    address public constant TOTAL = address(0xdeed);
     
     uint256 public proposalCount; // total proposals submitted
     uint256 public totalShares; // total shares across all members
@@ -122,7 +122,7 @@ contract MysticMoloch is ReentrancyGuard {
     
     constructor(
         address _depositToken,
-        address _voteToken,
+        address _stakeToken,
         address[] memory _summoner,
         uint256[] memory _summonerShares,
         uint256 _summonerDeposit,
@@ -133,8 +133,8 @@ contract MysticMoloch is ReentrancyGuard {
         uint256 _gracePeriodLength,
         uint256 _dilutionBound
     ) public {
-        require(_depositToken != _voteToken, "deposit/voteToken match");
-        require(_summoner.length == _summonerShares.length, "summoner/shares mismatch");
+        require(_depositToken != _stakeToken, "depositToken==stakeToken");
+        require(_summoner.length == _summonerShares.length, "summoner!=shares length");
         
         for (uint256 i = 0; i < _summoner.length; i++) {
             registerMember(_summoner[i], _summonerShares[i]);
@@ -153,7 +153,7 @@ contract MysticMoloch is ReentrancyGuard {
         }
         
         depositToken = _depositToken;
-        voteToken = _voteToken;
+        stakeToken = _stakeToken;
         proposalDeposit = _proposalDeposit;
         processingReward = _processingReward;
         periodDuration = _periodDuration;
@@ -177,8 +177,8 @@ contract MysticMoloch is ReentrancyGuard {
         bytes32 details
     ) payable external nonReentrant returns (uint256 proposalId) {
         require(sharesRequested.add(lootRequested) <= MAX_GUILD_BOUND, "guild maxed");
-        require(tokenWhitelist[tributeToken], "tributeToken !whitelisted");
-        require(tokenWhitelist[paymentToken], "paymentToken !whitelisted");
+        require(tokenWhitelist[tributeToken], "tributeToken!=whitelist");
+        require(tokenWhitelist[paymentToken], "paymentToken!=whitelist");
         require(applicant != GUILD && applicant != ESCROW && applicant != TOTAL, "applicant unreservable");
         require(members[applicant].jailed == 0, "applicant jailed");
 
@@ -191,10 +191,10 @@ contract MysticMoloch is ReentrancyGuard {
             require(msg.value == tributeOffered, "insufficient ETH");
             IWETH(wETH).deposit();
             (bool success, ) = wETH.call.value(msg.value)("");
-            require(success, "transfer failed");
+            require(success, "!transfer");
             IWETH(wETH).transfer(address(this), msg.value);
         } else {
-            require(IERC20(tributeToken).transferFrom(msg.sender, address(this), tributeOffered), "transfer failed");
+            require(IERC20(tributeToken).transferFrom(msg.sender, address(this), tributeOffered), "!transfer");
         }
         
         unsafeAddToBalance(ESCROW, tributeToken, tributeOffered);
@@ -207,9 +207,9 @@ contract MysticMoloch is ReentrancyGuard {
     }
     
     function submitWhitelistProposal(address tokenToWhitelist, bytes32 details) external returns (uint256 proposalId) {
-        require(tokenToWhitelist != address(0), "need token");
-        require(tokenToWhitelist != voteToken, "whitelist/voteToken match");
-        require(!tokenWhitelist[tokenToWhitelist], "already whitelisted");
+        require(tokenToWhitelist != address(0), "!token");
+        require(tokenToWhitelist != stakeToken, "whitelist==stakeToken");
+        require(!tokenWhitelist[tokenToWhitelist], "whitelisted");
         require(approvedTokens.length < MAX_TOKEN_WHITELIST_COUNT, "whitelist maxed");
 
         uint8[7] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
@@ -239,8 +239,8 @@ contract MysticMoloch is ReentrancyGuard {
     function submitGuildKickProposal(address memberToKick, bytes32 details) external returns (uint256 proposalId) {
         Member memory member = members[memberToKick];
 
-        require(member.shares > 0 || member.loot > 0, "must have share or loot");
-        require(members[memberToKick].jailed == 0, "already jailed");
+        require(member.shares > 0 || member.loot > 0, "!share||loot");
+        require(members[memberToKick].jailed == 0, "jailed");
 
         uint8[7] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
         flags[5] = 1; // guild kick
@@ -280,7 +280,6 @@ contract MysticMoloch is ReentrancyGuard {
             details : details
         });
         
-        // collect action data
         if (proposal.flags[6] == 1) {
             actions[proposalCount] = data;
         }
@@ -300,8 +299,8 @@ contract MysticMoloch is ReentrancyGuard {
 
         Proposal storage proposal = proposals[proposalId];
 
-        require(proposal.proposer != address(0), "unproposed");
-        require(proposal.flags[0] == 0, "already sponsored");
+        require(proposal.proposer != address(0), "!proposed");
+        require(proposal.flags[0] == 0, "sponsored");
         require(proposal.flags[3] == 0, "cancelled");
         require(members[proposal.applicant].jailed == 0, "applicant jailed");
 
@@ -311,14 +310,14 @@ contract MysticMoloch is ReentrancyGuard {
 
         // whitelist proposal
         if (proposal.flags[4] == 1) {
-            require(!tokenWhitelist[address(proposal.tributeToken)], "already whitelisted");
-            require(!proposedToWhitelist[address(proposal.tributeToken)], "already whitelist proposed");
+            require(!tokenWhitelist[address(proposal.tributeToken)], "whitelisted");
+            require(!proposedToWhitelist[address(proposal.tributeToken)], "whitelist proposed");
             require(approvedTokens.length < MAX_TOKEN_WHITELIST_COUNT, "whitelist maxed");
             proposedToWhitelist[address(proposal.tributeToken)] = true;
 
         // guild kick proposal
         } else if (proposal.flags[5] == 1) {
-            require(!proposedToKick[proposal.applicant], "kick already proposed");
+            require(!proposedToKick[proposal.applicant], "kick proposed");
             proposedToKick[proposal.applicant] = true;
         }
 
@@ -346,16 +345,16 @@ contract MysticMoloch is ReentrancyGuard {
         address memberAddress = memberAddressByDelegateKey[msg.sender];
         Member storage member = members[memberAddress];
 
-        require(proposalIndex < proposalQueue.length, "unproposed");
+        require(proposalIndex < proposalQueue.length, "!proposed");
         Proposal storage proposal = proposals[proposalQueue[proposalIndex]];
 
-        require(uintVote < 3, "!< 3");
+        require(uintVote < 3, "!<3");
         Vote vote = Vote(uintVote);
 
-        require(getCurrentPeriod() >= proposal.startingPeriod, "voting pending");
-        require(!hasVotingPeriodExpired(proposal.startingPeriod), "proposal expired");
-        require(proposal.votesByMember[memberAddress] == Vote.Null, "member voted");
-        require(vote == Vote.Yes || vote == Vote.No, "vote Yes or No");
+        require(getCurrentPeriod() >= proposal.startingPeriod, "pending");
+        require(!hasVotingPeriodExpired(proposal.startingPeriod), "expired");
+        require(proposal.votesByMember[memberAddress] == Vote.Null, "voted");
+        require(vote == Vote.Yes || vote == Vote.No, "!Yes||No");
 
         proposal.votesByMember[memberAddress] = vote;
 
@@ -386,7 +385,7 @@ contract MysticMoloch is ReentrancyGuard {
         uint256 proposalId = proposalQueue[proposalIndex];
         Proposal storage proposal = proposals[proposalId];
 
-        require(proposal.flags[4] == 0 && proposal.flags[5] == 0 && proposal.flags[6] == 0, "not standard proposal");
+        require(proposal.flags[4] == 0 && proposal.flags[5] == 0 && proposal.flags[6] == 0, "!standard");
 
         proposal.flags[1] = 1; // processed
 
@@ -456,7 +455,7 @@ contract MysticMoloch is ReentrancyGuard {
         uint256 proposalId = proposalQueue[proposalIndex];
         Proposal storage proposal = proposals[proposalId];
 
-        require(proposal.flags[4] == 1, "not whitelist proposal");
+        require(proposal.flags[4] == 1, "!whitelist");
 
         proposal.flags[1] = 1; // processed
 
@@ -487,7 +486,7 @@ contract MysticMoloch is ReentrancyGuard {
         bytes memory action = actions[proposalId];
         Proposal storage proposal = proposals[proposalId];
         
-        require(proposal.flags[6] == 1, "not action proposal");
+        require(proposal.flags[6] == 1, "!action");
 
         proposal.flags[1] = 1; // processed
 
@@ -518,7 +517,7 @@ contract MysticMoloch is ReentrancyGuard {
         uint256 proposalId = proposalQueue[proposalIndex];
         Proposal storage proposal = proposals[proposalId];
 
-        require(proposal.flags[5] == 1, "not kick proposal");
+        require(proposal.flags[5] == 1, "!kick");
 
         proposal.flags[1] = 1; // processed
 
@@ -566,12 +565,12 @@ contract MysticMoloch is ReentrancyGuard {
     }
 
     function _validateProposalForProcessing(uint256 proposalIndex) internal view {
-        require(proposalIndex < proposalQueue.length, "no such proposal");
+        require(proposalIndex < proposalQueue.length, "!proposal");
         Proposal memory proposal = proposals[proposalQueue[proposalIndex]];
 
-        require(getCurrentPeriod() >= proposal.startingPeriod + votingPeriodLength + gracePeriodLength, "proposal not ready");
+        require(getCurrentPeriod() >= proposal.startingPeriod + votingPeriodLength + gracePeriodLength, "!ready");
         require(proposal.flags[1] == 0, "proposal already processed");
-        require(proposalIndex == 0 || proposals[proposalQueue[proposalIndex - 1]].flags[1] == 1, "previous proposal unprocessed");
+        require(proposalIndex == 0 || proposals[proposalQueue[proposalIndex - 1]].flags[1] == 1, "previous !unprocessed");
     }
 
     function _returnDeposit(address sponsor) internal {
@@ -580,7 +579,7 @@ contract MysticMoloch is ReentrancyGuard {
     }
 
     function ragequit(uint256 sharesToBurn, uint256 lootToBurn) external {
-        require(members[msg.sender].exists == 1, "not member");
+        require(members[msg.sender].exists == 1, "!member");
         
         _ragequit(msg.sender, sharesToBurn, lootToBurn);
     }
@@ -593,7 +592,7 @@ contract MysticMoloch is ReentrancyGuard {
         require(member.shares >= sharesToBurn, "insufficient shares");
         require(member.loot >= lootToBurn, "insufficient loot");
 
-        require(canRagequit(member.highestIndexYesVote), "cannot ragequit until highest index proposal member voted YES on is processed");
+        require(canRagequit(member.highestIndexYesVote), "cannot ragequit until highest index proposal member voted YES on processes");
 
         uint256 sharesAndLootToBurn = sharesToBurn.add(lootToBurn);
 
@@ -620,7 +619,7 @@ contract MysticMoloch is ReentrancyGuard {
     function ragekick(address memberToKick) external {
         Member storage member = members[memberToKick];
 
-        require(member.jailed != 0, "not jailed");
+        require(member.jailed != 0, "!jailed");
         require(member.loot > 0, "no loot"); // note - should be impossible for jailed member to have shares
         require(canRagequit(member.highestIndexYesVote), "cannot ragequit until highest index proposal member voted YES on is processed");
 
@@ -632,7 +631,7 @@ contract MysticMoloch is ReentrancyGuard {
     }
 
     function withdrawBalances(address[] calldata tokens, uint256[] calldata amounts, bool max) external nonReentrant {
-        require(tokens.length == amounts.length, "tokens & amounts must match");
+        require(tokens.length == amounts.length, "tokens!=amounts");
 
         for (uint256 i=0; i < tokens.length; i++) {
             uint256 withdrawAmount = amounts[i];
@@ -647,7 +646,7 @@ contract MysticMoloch is ReentrancyGuard {
     function _withdrawBalance(address token, uint256 amount) internal {
         require(userTokenBalances[msg.sender][token] >= amount, "insufficient balance");
         
-        require(IERC20(token).transfer(msg.sender, amount), "transfer failed");
+        require(IERC20(token).transfer(msg.sender, amount), "!transfer");
         unsafeSubtractFromBalance(msg.sender, token, amount);
         
         emit Withdraw(msg.sender, token, amount);
@@ -657,7 +656,7 @@ contract MysticMoloch is ReentrancyGuard {
         uint256 amountToCollect = IERC20(token).balanceOf(address(this)).sub(userTokenBalances[TOTAL][token]);
         // only collect if 1) there are tokens to collect and 2) token is whitelisted
         require(amountToCollect > 0, "no tokens");
-        require(tokenWhitelist[token], "not whitelisted");
+        require(tokenWhitelist[token], "!whitelisted");
         
         if (userTokenBalances[GUILD][token] == 0 && totalGuildBankTokens < MAX_TOKEN_GUILDBANK_COUNT) {totalGuildBankTokens += 1;}
         unsafeAddToBalance(GUILD, token, amountToCollect);
@@ -668,9 +667,9 @@ contract MysticMoloch is ReentrancyGuard {
     // NOTE: requires that delegate key which sent the original proposal cancels, msg.sender == proposal.proposer
     function cancelProposal(uint256 proposalId) external {
         Proposal storage proposal = proposals[proposalId];
-        require(proposal.flags[0] == 0, "proposal already sponsored");
-        require(proposal.flags[3] == 0, "proposal already cancelled");
-        require(msg.sender == proposal.proposer, "only proposer cancels");
+        require(proposal.flags[0] == 0, "sponsored");
+        require(proposal.flags[3] == 0, "cancelled");
+        require(msg.sender == proposal.proposer, "!proposer");
 
         proposal.flags[3] = 1; // cancelled
         
@@ -680,8 +679,8 @@ contract MysticMoloch is ReentrancyGuard {
     }
 
     function updateDelegateKey(address newDelegateKey) external {
-        require(members[msg.sender].shares > 0, "not shareholder");
-        require(newDelegateKey != address(0), "newDelegateKey zeroed");
+        require(members[msg.sender].shares > 0, "caller !shareholder");
+        require(newDelegateKey != address(0), "newDelegateKey==0");
 
         // skip checks if member is setting the delegate key to their member address
         if (newDelegateKey != msg.sender) {
@@ -720,8 +719,8 @@ contract MysticMoloch is ReentrancyGuard {
     }
     
     function getMemberProposalVote(address memberAddress, uint256 proposalIndex) public view returns (Vote) {
-        require(members[memberAddress].exists == 1, "not member");
-        require(proposalIndex < proposalQueue.length, "unproposed");
+        require(members[memberAddress].exists == 1, "!member");
+        require(proposalIndex < proposalQueue.length, "!proposed");
         
         return proposals[proposalQueue[proposalIndex]].votesByMember[memberAddress];
     }
@@ -828,7 +827,7 @@ contract MysticMoloch is ReentrancyGuard {
     }
     
     function claimShares(uint256 amount) external nonReentrant {
-        require(IERC20(voteToken).transferFrom(msg.sender, address(0xdead), amount), "transfer failed"); // burn vote wrapper token & claim shares (1:1)
+        require(IERC20(stakeToken).transferFrom(msg.sender, address(this), amount), "!transfer"); // deposit stake token & claim shares (1:1)
         
         // if the sender is already a member, add to their existing shares 
         if (members[msg.sender].exists == 1) {
