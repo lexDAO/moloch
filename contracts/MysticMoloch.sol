@@ -495,17 +495,20 @@ contract MysticMoloch is ReentrancyGuard {
         if (didPass == true) {
             proposal.flags[2] = 1; // didPass
             
-            if (proposal.paymentToken != address(0)) {
+            if (proposal.paymentToken == address(0)) {
+                // execute call with ether
+                (bool success, bytes memory retData) = proposal.applicant.call.value(proposal.paymentRequested)(action);
+                require(success, "call failure");
+                return retData;
+            } else {
+                // execute call with token
+                (bool success, bytes memory retData) = proposal.applicant.call.value(0)(action);
+                require(success, "call failure");
                 unsafeSubtractFromBalance(GUILD, proposal.paymentToken, proposal.paymentRequested);
                 // if the proposal spends 100% of guild bank balance for a token, decrement total guild bank tokens
                 if (userTokenBalances[GUILD][proposal.paymentToken] == 0 && proposal.paymentRequested > 0) {totalGuildBankTokens -= 1;}
+                return retData;
             }
-            
-            // execute call 
-            (bool success, bytes memory retData) = proposal.applicant.call.value(proposal.paymentRequested)(action);
-            require(success, "call failure");
-            
-            return retData;
         }
         
         emit ProcessGuildActionProposal(proposalIndex, proposalId, didPass);
