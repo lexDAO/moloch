@@ -9,7 +9,7 @@
 
 demo deployments:
 
-* anjDAO (ANJ holders can wrap into Moloch v2x guild; join LexDAO arbitration protocols): 🦅🍬 [0x4B807Cf48E49D86BbBbbFc07D9C48719A7103f3e](https://etherscan.io/address/0x4B807Cf48E49D86BbBbbFc07D9C48719A7103f3e#code)
+* anjDAO (ANJ holders can wrap into Moloch v2x guild; join LexDAO arbitration protocols): 🦅🍬 [0x09c9653644ceF86AeA1B25718228a03c80ef683c](https://etherscan.io/address/0x09c9653644ceF86AeA1B25718228a03c80ef683c#code)
 
 misc:
 
