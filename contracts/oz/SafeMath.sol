@@ -1,5 +1,7 @@
 pragma solidity 0.5.17;
 
+pragma solidity 0.5.17;
+
 library SafeMath { // wrappers over solidity arithmetic operations with overflow checks
     function add(uint256 a, uint256 b) internal pure returns (uint256) {
         uint256 c = a + b;
