@@ -11,7 +11,7 @@ contract MysticMoloch is ReentrancyGuard {
     /***************
     GLOBAL CONSTANTS
     ***************/
-    address public depositToken; // deposit token contract reference; default = wETH
+    address public depositToken; // deposit token contract reference - default = wETH
     address public stakeToken; // stake token contract reference for guild voting shares 
     address public wETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // canonical ether token wrapper contract reference for proposals
     
@@ -26,7 +26,7 @@ contract MysticMoloch is ReentrancyGuard {
     // HARD-CODED LIMITS
     // These numbers are quite arbitrary; they are small enough to avoid overflows when doing calculations
     // with periods or shares, yet big enough to not limit reasonable use cases.
-    uint256 constant MAX_GUILD_BOUND = 10**36; // maximum bound for guild shares / loot (reflects guild token 18 decimal default)
+    uint256 constant MAX_GUILD_BOUND = 10**36; // maximum bound for guild shares & loot (reflects guild token 18 decimal default)
     uint256 constant MAX_TOKEN_WHITELIST_COUNT = 400; // maximum number of whitelisted tokens
     uint256 constant MAX_TOKEN_GUILDBANK_COUNT = 200; // maximum number of tokens with non-zero balance in guildbank
 
@@ -43,8 +43,8 @@ contract MysticMoloch is ReentrancyGuard {
     event SponsorProposal(address indexed delegateKey, address indexed memberAddress, uint256 proposalId, uint256 proposalIndex, uint256 startingPeriod);
     event SubmitVote(uint256 proposalId, uint256 indexed proposalIndex, address indexed delegateKey, address indexed memberAddress, uint8 uintVote);
     event ProcessProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, bool didPass);
+    event ProcessActionProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, bool didPass);
     event ProcessWhitelistProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, bool didPass);
-    event ProcessGuildActionProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, bool didPass);
     event ProcessGuildKickProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, bool didPass);
     event UpdateDelegateKey(address indexed memberAddress, address newDelegateKey);
     event Transfer(address indexed from, address indexed to, uint256 amount); // guild token mint, burn & (loot) transfer tracking
@@ -78,7 +78,7 @@ contract MysticMoloch is ReentrancyGuard {
         address delegateKey; // the key responsible for submitting proposals & voting - defaults to member address unless updated
         uint8 exists; // always true (1) once a member has been created
         uint256 shares; // the # of voting shares assigned to this member
-        uint256 loot; // the loot amount available to this member (combined with shares on ragekick) / transferable by guild token
+        uint256 loot; // the loot amount available to this member (combined with shares on ragekick) - transferable by guild token
         uint256 highestIndexYesVote; // highest proposal index # on which the member voted YES
         uint256 jailed; // set to proposalIndex of a passing guild kick proposal for this member, prevents voting on & sponsoring proposals
     }
@@ -113,7 +113,7 @@ contract MysticMoloch is ReentrancyGuard {
     
     mapping(uint256 => Proposal) public proposals;
 
-    uint256[] private proposalQueue;
+    uint256[] public proposalQueue;
 
     modifier onlyDelegate {
         require(members[memberAddressByDelegateKey[msg.sender]].shares > 0, "!delegate");
@@ -186,7 +186,7 @@ contract MysticMoloch is ReentrancyGuard {
             require(totalGuildBankTokens < MAX_TOKEN_GUILDBANK_COUNT, "guildbank maxed");
         }
         
-        // collect tribute from proposer & store it in the Moloch until the proposal is processed / if ether, wrap into wETH
+        // collect tribute from proposer & store it in the Moloch until the proposal is processed - if ether, wrap into wETH
         if (tributeToken == wETH && msg.value > 0) {
             require(msg.value == tributeOffered, "insufficient ETH");
             IWETH(wETH).deposit();
@@ -206,6 +206,23 @@ contract MysticMoloch is ReentrancyGuard {
         return proposalCount - 1; // return proposalId - contracts calling submit might want it
     }
     
+    function submitActionProposal( // stages arbitrary function calls for member vote - based on Raid Guild 'Minion'
+        address actionTo,
+        address actionToken,
+        uint256 actionTokenAmount,
+        uint256 actionValue,
+        bytes calldata data,
+        bytes32 details
+    ) external returns (uint256 proposalId) {
+        
+        uint8[7] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
+        flags[6] = 1; // guild action
+        
+        _submitProposal(actionTo, 0, 0, actionValue, address(0), actionTokenAmount, actionToken, details, flags, data);
+        
+        return proposalCount - 1;
+    }
+    
     function submitWhitelistProposal(address tokenToWhitelist, bytes32 details) external returns (uint256 proposalId) {
         require(tokenToWhitelist != address(0), "!token");
         require(tokenToWhitelist != stakeToken, "whitelist==stakeToken");
@@ -220,22 +237,6 @@ contract MysticMoloch is ReentrancyGuard {
         return proposalCount - 1;
     }
     
-    function submitGuildActionProposal( // stages arbitrary function calls for member vote (based on Raid Guild 'Minion')
-        address actionTo,
-        address actionToken,
-        uint256 actionValue,
-        bytes calldata data,
-        bytes32 details
-    ) external returns (uint256 proposalId) {
-        
-        uint8[7] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
-        flags[6] = 1; // guild action
-        
-        _submitProposal(actionTo, 0, 0, 0, address(0), actionValue, actionToken, details, flags, data);
-        
-        return proposalCount - 1;
-    }
-
     function submitGuildKickProposal(address memberToKick, bytes32 details) external returns (uint256 proposalId) {
         Member memory member = members[memberToKick];
 
@@ -448,6 +449,48 @@ contract MysticMoloch is ReentrancyGuard {
         
         emit ProcessProposal(proposalIndex, proposalId, didPass);
     }
+    
+    function processActionProposal(uint256 proposalIndex) external nonReentrant returns (bool, bytes memory) {
+        _validateProposalForProcessing(proposalIndex);
+        
+        uint256 proposalId = proposalQueue[proposalIndex];
+        bytes memory action = actions[proposalId];
+        Proposal storage proposal = proposals[proposalId];
+        
+        require(proposal.flags[6] == 1, "!action");
+
+        proposal.flags[1] = 1; // processed
+
+        bool didPass = _didPass(proposalIndex);
+        
+        // Make the proposal fail if it is requesting more ether than the available local balance
+        if (proposal.paymentToken == address(0) && proposal.tributeOffered > address(this).balance) {
+            didPass = false;
+        }
+        
+        // Make the proposal fail if it is requesting more stake token than the available local balance
+        if (proposal.paymentToken == stakeToken && proposal.paymentRequested > IERC20(stakeToken).balanceOf(address(this))) {
+            didPass = false;
+        }
+        
+        // Make the proposal fail if it is requesting more tokens than the available guild bank balance
+        if (proposal.paymentToken != address(0) && proposal.paymentToken != stakeToken && proposal.paymentRequested > userTokenBalances[GUILD][proposal.paymentToken]) {
+            didPass = false;
+        }
+
+        if (didPass == true) {
+            proposal.flags[2] = 1; // didPass
+            (bool success, bytes memory retData) = proposal.applicant.call.value(proposal.tributeOffered)(action);
+            if (proposal.paymentToken != address(0) && proposal.paymentToken != stakeToken) {
+                unsafeSubtractFromBalance(GUILD, proposal.paymentToken, proposal.paymentRequested);
+                // if the action proposal spends 100% of guild bank balance for a token, decrement total guild bank tokens
+                if (userTokenBalances[GUILD][proposal.paymentToken] == 0 && proposal.paymentRequested > 0) {totalGuildBankTokens -= 1;}
+            }
+            return (success, retData);
+        }
+        
+        emit ProcessActionProposal(proposalIndex, proposalId, didPass);
+    }
 
     function processWhitelistProposal(uint256 proposalIndex) external {
         _validateProposalForProcessing(proposalIndex);
@@ -477,51 +520,6 @@ contract MysticMoloch is ReentrancyGuard {
         _returnDeposit(proposal.sponsor);
         
         emit ProcessWhitelistProposal(proposalIndex, proposalId, didPass);
-    }
-
-    function processGuildActionProposal(uint256 proposalIndex) external nonReentrant returns (bytes memory) {
-        _validateProposalForProcessing(proposalIndex);
-        
-        uint256 proposalId = proposalQueue[proposalIndex];
-        bytes memory action = actions[proposalId];
-        Proposal storage proposal = proposals[proposalId];
-        
-        require(proposal.flags[6] == 1, "!action");
-
-        proposal.flags[1] = 1; // processed
-
-        bool didPass = _didPass(proposalIndex);
-        
-        // Make the proposal fail if it is requesting more tokens as payment than the available guild bank balance
-        if (proposal.paymentRequested > userTokenBalances[GUILD][proposal.paymentToken]) {
-            didPass = false;
-        }
-        
-        // Make the proposal fail if it is requesting more ether as payment than the available balance
-        if (proposal.paymentToken == address(0) && proposal.paymentRequested > address(this).balance) {
-            didPass = false;
-        }
-        
-        if (didPass == true) {
-            proposal.flags[2] = 1; // didPass
-            
-            if (proposal.paymentToken == address(0)) {
-                // execute call with ether
-                (bool success, bytes memory retData) = proposal.applicant.call.value(proposal.paymentRequested)(action);
-                require(success, "call failure");
-                return retData;
-            } else {
-                // execute call with token
-                (bool success, bytes memory retData) = proposal.applicant.call.value(0)(action);
-                require(success, "call failure");
-                unsafeSubtractFromBalance(GUILD, proposal.paymentToken, proposal.paymentRequested);
-                // if the proposal spends 100% of guild bank balance for a token, decrement total guild bank tokens
-                if (userTokenBalances[GUILD][proposal.paymentToken] == 0 && proposal.paymentRequested > 0) {totalGuildBankTokens -= 1;}
-                return retData;
-            }
-        }
-        
-        emit ProcessGuildActionProposal(proposalIndex, proposalId, didPass);
     }
 
     function processGuildKickProposal(uint256 proposalIndex) external {
@@ -665,8 +663,8 @@ contract MysticMoloch is ReentrancyGuard {
         emit Withdraw(msg.sender, token, amount);
     }
 
-    function collectTokens(address token) external nonReentrant {
-        uint256 amountToCollect = IERC20(token).balanceOf(address(this)).sub(userTokenBalances[TOTAL][token]);
+    function collectTokens(address token) external {
+        uint256 amountToCollect = IERC20(token).balanceOf(address(this)) - userTokenBalances[TOTAL][token];
         // only collect if 1) there are tokens to collect & 2) token is whitelisted
         require(amountToCollect > 0, "!amount");
         require(tokenWhitelist[token], "!whitelisted");
@@ -829,7 +827,7 @@ contract MysticMoloch is ReentrancyGuard {
     }
     
     function totalSupply() public view returns (uint256) { 
-        return totalShares.add(totalLoot);
+        return totalShares + totalLoot;
     }
     
     // BALANCE MGMT FUNCTIONS
@@ -846,10 +844,10 @@ contract MysticMoloch is ReentrancyGuard {
         if (members[msg.sender].exists == 1) {
             members[msg.sender].shares = members[msg.sender].shares.add(amount);
 
-            // if the sender is a new member, create a new record for them
-            } else {
-                registerMember(msg.sender, amount);
-            }
+        // if the sender is a new member, create a new record for them
+        } else {
+            registerMember(msg.sender, amount);
+        }
 
         // mint new guild token & shares 
         mintGuildToken(msg.sender, amount);
@@ -871,8 +869,8 @@ contract MysticMoloch is ReentrancyGuard {
 
     // LOOT TRANSFER FUNCTION
     function transfer(address receiver, uint256 lootToTransfer) external returns (bool) {
-        members[msg.sender].loot = members[msg.sender].loot.sub(lootToTransfer);
-        members[receiver].loot = members[msg.sender].loot.add(lootToTransfer);
+        members[msg.sender].loot -= lootToTransfer;
+        members[receiver].loot += lootToTransfer;
         
         balances[msg.sender] -= lootToTransfer;
         balances[receiver] += lootToTransfer;
