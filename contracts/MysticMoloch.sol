@@ -1,8 +1,8 @@
 pragma solidity 0.5.17;
 
 import "./oz/SafeMath.sol";
-import "./oz/IERC20.sol";
 import "./oz/ReentrancyGuard.sol";
+import "./oz/IERC20.sol";
 import "./IWETH.sol";
 
 contract MysticMoloch is ReentrancyGuard { 
@@ -13,7 +13,7 @@ contract MysticMoloch is ReentrancyGuard {
     ***************/
     address public depositToken; // deposit token contract reference; default = wETH
     address public stakeToken; // stake token contract reference for guild voting shares 
-    address public wETH = 0xc778417E063141139Fce010982780140Aa0cD5Ab; // canonical ether token wrapper contract reference for proposals
+    address public wETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // canonical ether token wrapper contract reference for proposals
     
     uint256 public proposalDeposit; // default = 10 deposit token 
     uint256 public processingReward; // default = 0.1 - amount of deposit token to give to whoever processes a proposal
@@ -35,9 +35,9 @@ contract MysticMoloch is ReentrancyGuard {
     string private _symbol = "MOL-V2X";
     uint8 private _decimals = 18;
 
-    // ***************
-    // EVENTS
-    // ***************
+    // **************
+    // EVENT TRACKING
+    // **************
     event SubmitProposal(address indexed applicant, uint256 sharesRequested, uint256 lootRequested, uint256 tributeOffered, address tributeToken, uint256 paymentRequested, address paymentToken, bytes32 details, uint8[7] flags, bytes data, uint256 proposalId, address indexed delegateKey, address indexed memberAddress);
     event CancelProposal(uint256 indexed proposalId, address applicantAddress);
     event SponsorProposal(address indexed delegateKey, address indexed memberAddress, uint256 proposalId, uint256 proposalIndex, uint256 startingPeriod);
@@ -226,7 +226,7 @@ contract MysticMoloch is ReentrancyGuard {
         uint256 actionValue,
         bytes calldata data,
         bytes32 details
-    ) external nonReentrant returns (uint256 proposalId) {
+    ) external returns (uint256 proposalId) {
         
         uint8[7] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
         flags[6] = 1; // guild action
@@ -425,7 +425,7 @@ contract MysticMoloch is ReentrancyGuard {
             totalShares += proposal.sharesRequested;
             totalLoot += proposal.lootRequested;
 
-            // if the proposal tribute is the first tokens of its kind to make it into the guild bank, increment total guild bank tokens
+            // if the proposal tribute is the first token of its kind to make it into the guild bank, increment total guild bank tokens
             if (userTokenBalances[GUILD][proposal.tributeToken] == 0 && proposal.tributeOffered > 0) {
                 totalGuildBankTokens += 1;
             }
@@ -491,6 +491,16 @@ contract MysticMoloch is ReentrancyGuard {
         proposal.flags[1] = 1; // processed
 
         bool didPass = _didPass(proposalIndex);
+        
+        // Make the proposal fail if it is requesting more tokens as payment than the available guild bank balance
+        if (proposal.paymentRequested > userTokenBalances[GUILD][proposal.paymentToken]) {
+            didPass = false;
+        }
+        
+        // Make the proposal fail if it is requesting more ether as payment than the available balance
+        if (proposal.paymentToken == address(0) && proposal.paymentRequested > address(this).balance) {
+            didPass = false;
+        }
         
         if (didPass == true) {
             proposal.flags[2] = 1; // didPass
@@ -655,7 +665,7 @@ contract MysticMoloch is ReentrancyGuard {
         emit Withdraw(msg.sender, token, amount);
     }
 
-    function collectTokens(address token) external {
+    function collectTokens(address token) external nonReentrant {
         uint256 amountToCollect = IERC20(token).balanceOf(address(this)).sub(userTokenBalances[TOTAL][token]);
         // only collect if 1) there are tokens to collect & 2) token is whitelisted
         require(amountToCollect > 0, "!amount");
@@ -819,7 +829,7 @@ contract MysticMoloch is ReentrancyGuard {
     }
     
     function totalSupply() public view returns (uint256) { 
-        return totalShares + totalLoot;
+        return totalShares.add(totalLoot);
     }
     
     // BALANCE MGMT FUNCTIONS
@@ -860,7 +870,7 @@ contract MysticMoloch is ReentrancyGuard {
     }
 
     // LOOT TRANSFER FUNCTION
-    function transfer(address receiver, uint256 lootToTransfer) external {
+    function transfer(address receiver, uint256 lootToTransfer) external returns (bool) {
         members[msg.sender].loot = members[msg.sender].loot.sub(lootToTransfer);
         members[receiver].loot = members[msg.sender].loot.add(lootToTransfer);
         
@@ -868,5 +878,7 @@ contract MysticMoloch is ReentrancyGuard {
         balances[receiver] += lootToTransfer;
         
         emit Transfer(msg.sender, receiver, lootToTransfer);
+        
+        return true;
     }
 }
