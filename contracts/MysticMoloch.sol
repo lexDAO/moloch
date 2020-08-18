@@ -13,7 +13,7 @@ contract MysticMoloch is ReentrancyGuard {
     ***************/
     address public depositToken; // deposit token contract reference - default = wETH
     address public stakeToken; // stake token contract reference for guild voting shares 
-    address public wETH = 0xc778417E063141139Fce010982780140Aa0cD5Ab; // canonical ether token wrapper contract reference for proposals
+    address public wETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // canonical ether token wrapper contract reference for proposals
     
     uint256 public proposalDeposit; // default = 10 deposit token 
     uint256 public processingReward; // default = 0.1 - amount of deposit token to give to whoever processes a proposal
@@ -188,7 +188,7 @@ contract MysticMoloch is ReentrancyGuard {
         
         // collect tribute from proposer & store it in the Moloch until the proposal is processed - if ether, wrap into wETH
         if (tributeToken == wETH && msg.value > 0) {
-            require(msg.value == tributeOffered, "insufficient ETH");
+            require(msg.value == tributeOffered, "!ETH");
             IWETH(wETH).deposit();
             (bool success, ) = wETH.call.value(msg.value)("");
             require(success, "!transfer");
@@ -312,7 +312,7 @@ contract MysticMoloch is ReentrancyGuard {
         // whitelist proposal
         if (proposal.flags[4] == 1) {
             require(!tokenWhitelist[address(proposal.tributeToken)], "whitelisted");
-            require(!proposedToWhitelist[address(proposal.tributeToken)], "whitelist proposed");
+            require(!proposedToWhitelist[address(proposal.tributeToken)], "proposed");
             require(approvedTokens.length < MAX_TOKEN_WHITELIST_COUNT, "whitelist maxed");
             proposedToWhitelist[address(proposal.tributeToken)] = true;
 
@@ -600,8 +600,8 @@ contract MysticMoloch is ReentrancyGuard {
 
         Member storage member = members[memberAddress];
 
-        require(member.shares >= sharesToBurn, "insufficient shares");
-        require(member.loot >= lootToBurn, "insufficient loot");
+        require(member.shares >= sharesToBurn, "!shares");
+        require(member.loot >= lootToBurn, "!loot");
 
         require(canRagequit(member.highestIndexYesVote), "!ragequit until highest index proposal member voted YES processes");
 
@@ -695,8 +695,8 @@ contract MysticMoloch is ReentrancyGuard {
 
         // skip checks if member is setting the delegate key to their member address
         if (newDelegateKey != msg.sender) {
-            require(members[newDelegateKey].exists == 0, "cannot overwrite members");
-            require(members[memberAddressByDelegateKey[newDelegateKey]].exists == 0, "cannot overwrite keys");
+            require(members[newDelegateKey].exists == 0, "!overwrite members");
+            require(members[memberAddressByDelegateKey[newDelegateKey]].exists == 0, "!overwrite keys");
         }
 
         Member storage member = members[msg.sender];
@@ -857,7 +857,7 @@ contract MysticMoloch is ReentrancyGuard {
     }
     
     function convertSharesToLoot(uint256 sharesToLoot) external {
-        require(members[msg.sender].shares >= sharesToLoot, "insufficient shares");
+        require(members[msg.sender].shares >= sharesToLoot, "!shares");
         
         members[msg.sender].shares -= sharesToLoot;
         members[msg.sender].loot += sharesToLoot;
@@ -873,10 +873,10 @@ contract MysticMoloch is ReentrancyGuard {
 
     // LOOT TRANSFER FUNCTION
     function transfer(address receiver, uint256 lootToTransfer) external returns (bool) {
-        require(members[msg.sender].loot >= lootToTransfer, "insufficient loot");
+        require(members[msg.sender].loot >= lootToTransfer, "!loot");
         
-        members[msg.sender].loot = members[msg.sender].loot.sub(lootToTransfer);
-        members[receiver].loot = members[receiver].loot.add(lootToTransfer);
+        members[msg.sender].loot -= lootToTransfer;
+        members[receiver].loot += lootToTransfer;
         
         balances[msg.sender] -= lootToTransfer;
         balances[receiver] += lootToTransfer;
