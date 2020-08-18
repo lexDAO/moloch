@@ -859,6 +859,8 @@ contract MysticMoloch is ReentrancyGuard {
     function convertSharesToLoot(uint256 sharesToLoot) external {
         members[msg.sender].shares -= sharesToLoot;
         members[msg.sender].loot += sharesToLoot;
+        totalShares -= sharesToLoot;
+        totalLoot += sharesToLoot;
     }
     
     function mintGuildToken(address memberAddress, uint256 amount) internal {
