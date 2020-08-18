@@ -2,14 +2,14 @@
 [![built-with openzeppelin](https://img.shields.io/badge/built%20with-OpenZeppelin-3677FF)](https://docs.openzeppelin.com/)
 > LexDAO upgrades MolochDAO 2 v3 *ish* 🧙
 
-- Mainnet: [0x40D9f74124C043F27e95bCc91495EF9E53Cb0591](https://etherscan.io/address/0x40D9f74124C043F27e95bCc91495EF9E53Cb0591#code)
-- xDai: [0x512b7C2Ca3DD370d84F7cBC363185FaB9E4b7faf](https://blockscout.com/poa/xdai/address/0x512b7C2Ca3DD370d84F7cBC363185FaB9E4b7faf/contracts)
+- Mainnet: [0x629F94765A65B31202888A83057341Dab2785757](https://etherscan.io/address/0x629F94765A65B31202888A83057341Dab2785757#code)
+- xDai: [0xe09433Ae4ffD29B3C673b4c7ea796c65906872d0](https://blockscout.com/poa/xdai/address/0xe09433Ae4ffD29B3C673b4c7ea796c65906872d0/contracts)
 - IDChain: [0x35b7f8208eA3B652aFDE3Fdb45d5178Fdd75B1E8](https://explorer.idchain.one/address/0x35b7f8208eA3B652aFDE3Fdb45d5178Fdd75B1E8/contracts)
-- Rinkeby: [0x7b5f9dF8649e486A533D180fe41E4d43684182BF](https://rinkeby.etherscan.io/address/0x7b5f9dF8649e486A533D180fe41E4d43684182BF#code)
+- Rinkeby: [0xe2202266567010403480e57D6422DB37A1f663E5](https://rinkeby.etherscan.io/address/0xe2202266567010403480e57D6422DB37A1f663E5#code)
 
 demo deployments:
 
-* anjDAO (ANJ holders can wrap into Moloch v2x guild; join LexDAO arbitration protocols): 🦅🍬 [0x09c9653644ceF86AeA1B25718228a03c80ef683c](https://etherscan.io/address/0x09c9653644ceF86AeA1B25718228a03c80ef683c#code)
+* anjDAO (ANJ holders can wrap into Moloch v2x guild; join LexDAO arbitration protocols): 🦅🍬 [0x4db64B1B52A658D573575967d62Ce894A53aE51D](https://etherscan.io/address/0x4db64B1B52A658D573575967d62Ce894A53aE51D#code)
 
 misc:
 
