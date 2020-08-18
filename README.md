@@ -4,7 +4,6 @@
 
 - Mainnet: [0x629F94765A65B31202888A83057341Dab2785757](https://etherscan.io/address/0x629F94765A65B31202888A83057341Dab2785757#code)
 - xDai: [0xe09433Ae4ffD29B3C673b4c7ea796c65906872d0](https://blockscout.com/poa/xdai/address/0xe09433Ae4ffD29B3C673b4c7ea796c65906872d0/contracts)
-- IDChain: [0x35b7f8208eA3B652aFDE3Fdb45d5178Fdd75B1E8](https://explorer.idchain.one/address/0x35b7f8208eA3B652aFDE3Fdb45d5178Fdd75B1E8/contracts)
 - Rinkeby: [0xe2202266567010403480e57D6422DB37A1f663E5](https://rinkeby.etherscan.io/address/0xe2202266567010403480e57D6422DB37A1f663E5#code)
 
 demo deployments:
