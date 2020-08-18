@@ -13,7 +13,7 @@ contract MysticMoloch is ReentrancyGuard {
     ***************/
     address public depositToken; // deposit token contract reference - default = wETH
     address public stakeToken; // stake token contract reference for guild voting shares 
-    address public wETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // canonical ether token wrapper contract reference for proposals
+    address public wETH = 0xc778417E063141139Fce010982780140Aa0cD5Ab; // canonical ether token wrapper contract reference for proposals
     
     uint256 public proposalDeposit; // default = 10 deposit token 
     uint256 public processingReward; // default = 0.1 - amount of deposit token to give to whoever processes a proposal
@@ -450,7 +450,7 @@ contract MysticMoloch is ReentrancyGuard {
         emit ProcessProposal(proposalIndex, proposalId, didPass);
     }
     
-    function processActionProposal(uint256 proposalIndex) external nonReentrant returns (bool, bytes memory) {
+    function processActionProposal(uint256 proposalIndex) external returns (bool, bytes memory) {
         _validateProposalForProcessing(proposalIndex);
         
         uint256 proposalId = proposalQueue[proposalIndex];
@@ -605,7 +605,7 @@ contract MysticMoloch is ReentrancyGuard {
 
         require(canRagequit(member.highestIndexYesVote), "!ragequit until highest index proposal member voted YES processes");
 
-        uint256 sharesAndLootToBurn = sharesToBurn.add(lootToBurn);
+        uint256 sharesAndLootToBurn = sharesToBurn + lootToBurn;
 
         // burn guild token, shares & loot
         burnGuildToken(memberAddress, sharesAndLootToBurn);
@@ -857,6 +857,8 @@ contract MysticMoloch is ReentrancyGuard {
     }
     
     function convertSharesToLoot(uint256 sharesToLoot) external {
+        require(members[msg.sender].shares >= sharesToLoot, "insufficient shares");
+        
         members[msg.sender].shares -= sharesToLoot;
         members[msg.sender].loot += sharesToLoot;
         totalShares -= sharesToLoot;
@@ -871,8 +873,10 @@ contract MysticMoloch is ReentrancyGuard {
 
     // LOOT TRANSFER FUNCTION
     function transfer(address receiver, uint256 lootToTransfer) external returns (bool) {
-        members[msg.sender].loot -= lootToTransfer;
-        members[receiver].loot += lootToTransfer;
+        require(members[msg.sender].loot >= lootToTransfer, "insufficient loot");
+        
+        members[msg.sender].loot = members[msg.sender].loot.sub(lootToTransfer);
+        members[receiver].loot = members[receiver].loot.add(lootToTransfer);
         
         balances[msg.sender] -= lootToTransfer;
         balances[receiver] += lootToTransfer;
