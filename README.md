@@ -2,7 +2,7 @@
 [![built-with openzeppelin](https://img.shields.io/badge/built%20with-OpenZeppelin-3677FF)](https://docs.openzeppelin.com/)
 > LexDAO upgrades MolochDAO 2 v3 *ish* 🧙
 
-- Mainnet: [0xfe1BDf345CA2869D27F6Cf54b4a5C226Ca579e8a](https://etherscan.io/address/0xfe1BDf345CA2869D27F6Cf54b4a5C226Ca579e8a#code)
+- Mainnet: [0x40D9f74124C043F27e95bCc91495EF9E53Cb0591](https://etherscan.io/address/0x40D9f74124C043F27e95bCc91495EF9E53Cb0591#code)
 - xDai: [0x512b7C2Ca3DD370d84F7cBC363185FaB9E4b7faf](https://blockscout.com/poa/xdai/address/0x512b7C2Ca3DD370d84F7cBC363185FaB9E4b7faf/contracts)
 - IDChain: [0x35b7f8208eA3B652aFDE3Fdb45d5178Fdd75B1E8](https://explorer.idchain.one/address/0x35b7f8208eA3B652aFDE3Fdb45d5178Fdd75B1E8/contracts)
 - Rinkeby: [0x7b5f9dF8649e486A533D180fe41E4d43684182BF](https://rinkeby.etherscan.io/address/0x7b5f9dF8649e486A533D180fe41E4d43684182BF#code)
