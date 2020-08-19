@@ -24,7 +24,7 @@ misc:
 > presale summoning circle accounts forward collected `depositToken` sum to back shares/loot in guild bank
 
 * **Guild Tokens** 🏵️ 
-> guild shares/loot are tokenized with basic ERC-20 interface (approve, transfer, transferFrom) / loot is freely transferable (members should respect guild/jxd rules)
+> guild shares/loot are tokenized with basic ERC-20 interface / loot is freely transferable, redeemable by members
 
 * **Ether Contributions** 🍬 
 > guild proposals can wrap raw Ether into tokenized wETH
