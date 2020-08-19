@@ -55,7 +55,7 @@ v2x also reflect various code squash updates to save size for new functions, rem
 
 `_votingPeriodLength` = **10** | 2 day voting period for fast-ish proposal cycle
 
-`_gracePeriodLength` = **5** | 1 day voting period ''
+`_gracePeriodLength` = **5** | 1 day grace period ''
 
 `_dilutionBound` = **3** | Default Moloch DAO dilution bound
 
