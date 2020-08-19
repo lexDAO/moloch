@@ -34,6 +34,21 @@ misc:
 
 v2x also reflect various code squash updates to save size for new functions, remove redundant references, and reduce gas costs throughout. 
 
+# v2x Summoning Guide
+> the following values are designed for Rinkeby testnet DAOs using our [Summoner factory](https://rinkeby.etherscan.io/address/0x04fdd68b9bd3adcd15c2df86a855438b43a76c10#writeContract):
+
+`_depositToken` = 0xc778417E063141139Fce010982780140Aa0cD5Ab | Rinkeby wETH
+`_stakeToken` = 0x0000000000000000000000000000000000000000 | Burner Address (stake tokens are more advanced use case)
+`_summoner` = ["YOUR ETH ADDRESS"] | Can add more summoner members to array
+`_summonerShares` = ["1000000000000000000"] | We use large wei amount to reflect 18 decimal guild tokens; can add more summoner allocations
+`_summonerDeposit` = 0 | For ease of deployment, omit contribution forwarding function from factory to new DAO; otherwise, approve factory as spender of amount
+`_proposalDeposit` = 0 | For ease of proposals, set to 0 to avoid need to approve and deposit tokens (lose bit of game theory)
+`_processingReward` = 0 | Similar to above, set to 0 for easy proposals
+`_periodDuration` = 17280 | Default Moloch DAO 4.8 hour period duration
+`_votingPeriodLength` = 10 | 2 day voting period for fast-ish proposal cycle
+`_gracePeriodLength` = 5 | 1 day voting period ''
+`_dilutionBound` = 3 | Default Moloch DAO dilution bound
+
 STEAL THIS CODE
 
 # Moloch v2
