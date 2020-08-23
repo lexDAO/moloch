@@ -884,8 +884,6 @@ contract MysticMoloch is ReentrancyGuard {
 
     // LOOT TRANSFER FUNCTIONS
     function transfer(address receiver, uint256 lootToTransfer) external returns (bool) {
-        require(members[msg.sender].loot >= lootToTransfer, "!loot");
-        
         members[msg.sender].loot = members[msg.sender].loot.sub(lootToTransfer);
         members[receiver].loot = members[receiver].loot.add(lootToTransfer);
         
@@ -898,8 +896,6 @@ contract MysticMoloch is ReentrancyGuard {
     }
     
     function transferFrom(address sender, address receiver, uint256 lootToTransfer) external returns (bool) {
-        require(members[sender].loot >= lootToTransfer, "!loot");
-        
         allowances[sender][msg.sender] = allowances[sender][msg.sender].sub(lootToTransfer);
         
         members[sender].loot = members[sender].loot.sub(lootToTransfer);
