@@ -117,7 +117,7 @@ contract MysticMoloch is ReentrancyGuard {
 
     uint256[] public proposalQueue;
     
-    bool public initialized;
+    bool private initialized;
 
     modifier onlyDelegate {
         require(members[memberAddressByDelegateKey[msg.sender]].shares > 0, "!delegate");
