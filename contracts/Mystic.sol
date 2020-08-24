@@ -31,7 +31,7 @@ contract Mystic is ReentrancyGuard {
     uint256 constant MAX_TOKEN_GUILDBANK_COUNT = 200; // maximum number of tokens with non-zero balance in guildbank
 
     // BANK TOKEN DETAILS
-    string public constant name = "Mystic DAO";
+    string public constant name = "MYSTIC DAO";
     string public constant symbol = "MXDAO";
     uint8 public constant decimals = 18;
 
