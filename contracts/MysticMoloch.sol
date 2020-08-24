@@ -417,7 +417,7 @@ contract MysticMoloch is ReentrancyGuard {
         }
 
         // PROPOSAL PASSED
-        if (didPass == true) {
+        if (didPass) {
             proposal.flags[2] = 1; // didPass
 
             // if the applicant is already a member, add to their existing shares & loot
@@ -472,25 +472,25 @@ contract MysticMoloch is ReentrancyGuard {
 
         bool didPass = _didPass(proposalIndex);
         
-        // Make the proposal fail if it is requesting more ether than the available local balance
-        if (proposal.paymentToken == address(0) && proposal.tributeOffered > address(this).balance) {
-            didPass = false;
-        }
-        
         // Make the proposal fail if it is requesting more stake token than the available local balance
         if (proposal.paymentToken == stakeToken && proposal.paymentRequested > IERC20(stakeToken).balanceOf(address(this))) {
             didPass = false;
         }
         
         // Make the proposal fail if it is requesting more tokens than the available guild bank balance
-        if (proposal.paymentToken != address(0) && proposal.paymentToken != stakeToken && proposal.paymentRequested > userTokenBalances[GUILD][proposal.paymentToken]) {
+        if (tokenWhitelist[proposal.paymentToken] && proposal.paymentRequested > userTokenBalances[GUILD][proposal.paymentToken]) {
+            didPass = false;
+        }
+        
+        // Make the proposal fail if it is requesting more ether than the available local balance
+        if (proposal.tributeOffered > address(this).balance) {
             didPass = false;
         }
 
-        if (didPass == true) {
+        if (didPass) {
             proposal.flags[2] = 1; // didPass
             (bool success, bytes memory retData) = proposal.applicant.call.value(proposal.tributeOffered)(action);
-            if (proposal.paymentToken != address(0) && proposal.paymentToken != stakeToken) {
+            if (tokenWhitelist[proposal.paymentToken]) {
                 unsafeSubtractFromBalance(GUILD, proposal.paymentToken, proposal.paymentRequested);
                 // if the action proposal spends 100% of guild bank balance for a token, decrement total guild bank tokens
                 if (userTokenBalances[GUILD][proposal.paymentToken] == 0 && proposal.paymentRequested > 0) {totalGuildBankTokens -= 1;}
@@ -517,7 +517,7 @@ contract MysticMoloch is ReentrancyGuard {
             didPass = false;
         }
 
-        if (didPass == true) {
+        if (didPass) {
             proposal.flags[2] = 1; // didPass
 
             tokenWhitelist[address(proposal.tributeToken)] = true;
@@ -543,7 +543,7 @@ contract MysticMoloch is ReentrancyGuard {
 
         bool didPass = _didPass(proposalIndex);
 
-        if (didPass == true) {
+        if (didPass) {
             proposal.flags[2] = 1; // didPass
             Member storage member = members[proposal.applicant];
             member.jailed = proposalIndex;
@@ -868,8 +868,6 @@ contract MysticMoloch is ReentrancyGuard {
     }
     
     function convertSharesToLoot(uint256 sharesToLoot) external {
-        require(members[msg.sender].shares >= sharesToLoot, "!shares");
-        
         members[msg.sender].shares = members[msg.sender].shares.sub(sharesToLoot);
         members[msg.sender].loot = members[msg.sender].loot.add(sharesToLoot);
         totalShares = totalShares.sub(sharesToLoot);
