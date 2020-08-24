@@ -5,7 +5,7 @@ import "./oz/ReentrancyGuard.sol";
 import "./oz/IERC20.sol";
 import "./IWETH.sol";
 
-contract MysticMoloch is ReentrancyGuard { 
+contract Mystic is ReentrancyGuard { 
     using SafeMath for uint256;
 
     /***************
@@ -31,8 +31,8 @@ contract MysticMoloch is ReentrancyGuard {
     uint256 constant MAX_TOKEN_GUILDBANK_COUNT = 200; // maximum number of tokens with non-zero balance in guildbank
 
     // BANK TOKEN DETAILS
-    string public constant name = "Moloch DAO v2x Bank";
-    string public constant symbol = "MOL-V2X";
+    string public constant name = "Mystic DAO";
+    string public constant symbol = "MXDAO";
     uint8 public constant decimals = 18;
 
     // **************
@@ -195,7 +195,7 @@ contract MysticMoloch is ReentrancyGuard {
             require(totalGuildBankTokens < MAX_TOKEN_GUILDBANK_COUNT, "guildbank maxed");
         }
         
-        // collect tribute from proposer & store it in the Moloch until the proposal is processed - if ether, wrap into wETH
+        // collect tribute from proposer & store it in the Mystic until the proposal is processed - if ether, wrap into wETH
         if (tributeToken == wETH && msg.value > 0) {
             require(msg.value == tributeOffered, "!ETH");
             IWETH(wETH).deposit();
@@ -303,7 +303,7 @@ contract MysticMoloch is ReentrancyGuard {
     }
 
     function sponsorProposal(uint256 proposalId) external nonReentrant onlyDelegate {
-        // collect proposal deposit from sponsor & store it in the Moloch until the proposal is processed
+        // collect proposal deposit from sponsor & store it in the Mystic until the proposal is processed
         require(IERC20(depositToken).transferFrom(msg.sender, address(this), proposalDeposit), "!transfer");
         unsafeAddToBalance(ESCROW, depositToken, proposalDeposit);
 
@@ -350,7 +350,7 @@ contract MysticMoloch is ReentrancyGuard {
         emit SponsorProposal(msg.sender, memberAddress, proposalId, proposalQueue.length - 1, startingPeriod);
     }
 
-    // NOTE: In MolochV2 proposalIndex != proposalId
+    // NOTE: In Mystic, proposalIndex != proposalId
     function submitVote(uint256 proposalIndex, uint8 uintVote) external onlyDelegate {
         address memberAddress = memberAddressByDelegateKey[msg.sender];
         Member storage member = members[memberAddress];
@@ -636,7 +636,7 @@ contract MysticMoloch is ReentrancyGuard {
         emit Ragequit(memberAddress, sharesToBurn, lootToBurn);
     }
 
-    function ragekick(address memberToKick) external {
+    function ragekick(address memberToKick) external onlyDelegate {
         Member storage member = members[memberToKick];
 
         require(member.jailed != 0, "!jailed");
@@ -672,7 +672,7 @@ contract MysticMoloch is ReentrancyGuard {
         emit Withdraw(msg.sender, token, amount);
     }
 
-    function collectTokens(address token) external {
+    function collectTokens(address token) external onlyDelegate nonReentrant {
         uint256 amountToCollect = IERC20(token).balanceOf(address(this)).sub(userTokenBalances[TOTAL][token]);
         // only collect if 1) there are tokens to collect & 2) token is whitelisted
         require(amountToCollect > 0, "!amount");
