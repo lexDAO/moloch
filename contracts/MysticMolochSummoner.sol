@@ -3,16 +3,16 @@ pragma solidity 0.5.17;
 import "./Moloch.sol";
 import "./CloneFactory.sol";
 
-contract MysticMolochSummoner is CloneFactory { 
+contract MysticSummoner is CloneFactory { 
     address payable public template;
     
     constructor (address payable _template) public {
         template = _template;
     }
 
-    event SummonMoloch(address indexed baal, address depositToken, address stakeToken, address[] summoner, uint256[] summonerShares, uint256 summoningDeposit, uint256 proposalDeposit, uint256 processingReward, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 dilutionBound, uint256 summoningTime);
+    event SummonMystic(address indexed baal, address depositToken, address stakeToken, address[] summoner, uint256[] summonerShares, uint256 summoningDeposit, uint256 proposalDeposit, uint256 processingReward, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 dilutionBound, uint256 summoningTime);
  
-    function summonMoloch(
+    function summonMystic(
         address _depositToken,
         address _stakeToken,
         address[] memory _summoner,
@@ -25,7 +25,7 @@ contract MysticMolochSummoner is CloneFactory {
         uint256 _gracePeriodLength,
         uint256 _dilutionBound
     ) public returns (address) {
-        MysticMoloch baal = MysticMoloch(createClone(template));
+        Mystic baal = Mystic(createClone(template));
         
         baal.init(
             _depositToken,
@@ -41,9 +41,9 @@ contract MysticMolochSummoner is CloneFactory {
             _dilutionBound
         );
         
-        require(IERC20(_depositToken).transferFrom(msg.sender, address(baal), _summonerDeposit), "!transfer"); // transfer summoner deposit to new moloch
+        require(IERC20(_depositToken).transferFrom(msg.sender, address(baal), _summonerDeposit), "!transfer"); // transfer summoner deposit to new Mystic
         
-        emit SummonMoloch(address(baal), _depositToken, _stakeToken, _summoner, _summonerShares, _summonerDeposit, _proposalDeposit, _processingReward, _periodDuration, _votingPeriodLength, _gracePeriodLength, _dilutionBound, now);
+        emit SummonMystic(address(baal), _depositToken, _stakeToken, _summoner, _summonerShares, _summonerDeposit, _proposalDeposit, _processingReward, _periodDuration, _votingPeriodLength, _gracePeriodLength, _dilutionBound, now);
         
         return address(baal);
     }
