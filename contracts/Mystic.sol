@@ -105,6 +105,9 @@ contract Mystic is ReentrancyGuard {
         mapping(address => Vote) votesByMember; // the votes on this proposal by each member
     }
     
+    uint256[] public proposalQueue;
+    mapping(uint256 => Proposal) public proposals;
+    
     address[] public approvedTokens;
     mapping(address => bool) public tokenWhitelist;
 
@@ -113,9 +116,6 @@ contract Mystic is ReentrancyGuard {
     
     mapping(address => Member) public members;
     mapping(address => address) public memberAddressByDelegateKey;
-    
-    uint256[] public proposalQueue;
-    mapping(uint256 => Proposal) public proposals;
     
     modifier onlyDelegate {
         require(members[memberAddressByDelegateKey[msg.sender]].shares > 0, "!delegate");
