@@ -14,11 +14,11 @@ library SafeERC20 { // wrapper around erc20 token tx for non-standard contract -
    function _callOptionalReturn(IERC20 token, bytes memory data) private {
         require(address(token).isContract(), "SafeERC20: call to non-contract");
 
-        (bool success, bytes memory returndata) = address(token).call(data);
+        (bool success, bytes memory returnData) = address(token).call(data);
         require(success, "SafeERC20: low-level call failed");
 
-        if (returndata.length > 0) { // return data is optional
-            require(abi.decode(returndata, (bool)), "SafeERC20: erc20 operation did not succeed");
+        if (returnData.length > 0) { // return data is optional
+            require(abi.decode(returnData, (bool)), "SafeERC20: erc20 operation did not succeed");
         }
     }
 }
