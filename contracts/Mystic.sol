@@ -588,7 +588,7 @@ contract Mystic is ReentrancyGuard {
         require(proposalIndex < proposalQueue.length, "!proposal");
         Proposal memory proposal = proposals[proposalQueue[proposalIndex]];
 
-        require(getCurrentPeriod() >= proposal.startingPeriod + votingPeriodLength + gracePeriodLength, "!ready");
+        require(getCurrentPeriod() >= proposal.startingPeriod.add(votingPeriodLength).add(gracePeriodLength), "!ready");
         require(proposal.flags[1] == 0, "processed");
         require(proposalIndex == 0 || proposals[proposalQueue[proposalIndex - 1]].flags[1] == 1, "prior !processed");
     }
@@ -724,7 +724,7 @@ contract Mystic is ReentrancyGuard {
     }
 
     function hasVotingPeriodExpired(uint256 startingPeriod) public view returns (bool) {
-        return getCurrentPeriod() >= startingPeriod + votingPeriodLength;
+        return getCurrentPeriod() >= startingPeriod.add(votingPeriodLength);
     }
     
     /***************
