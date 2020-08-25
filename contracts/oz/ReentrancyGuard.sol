@@ -1,6 +1,6 @@
 pragma solidity 0.5.17;
 
-contract ReentrancyGuard {
+contract ReentrancyGuard { // call wrapper for reentrancy check
     bool private _notEntered;
 
     function _initReentrancyGuard () internal {
