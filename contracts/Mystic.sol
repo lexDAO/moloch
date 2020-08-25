@@ -1,12 +1,15 @@
 pragma solidity 0.5.17;
 
+import "./oz/Address.sol";
 import "./oz/SafeMath.sol";
 import "./oz/IERC20.sol";
+import "./oz/SafeERC20.sol";
 import "./IWETH.sol";
 import "./oz/ReentrancyGuard.sol";
 
 contract Mystic is ReentrancyGuard { 
     using SafeMath for uint256;
+    using SafeERC20 for IERC20;
 
     /***************
     GLOBAL CONSTANTS
@@ -201,7 +204,7 @@ contract Mystic is ReentrancyGuard {
             require(success, "!transfer");
             IWETH(wETH).transfer(address(this), msg.value);
         } else {
-            require(IERC20(tributeToken).transferFrom(msg.sender, address(this), tributeOffered), "!transfer");
+            IERC20(tributeToken).safeTransferFrom(msg.sender, address(this), tributeOffered);
         }
         
         unsafeAddToBalance(ESCROW, tributeToken, tributeOffered);
@@ -302,7 +305,7 @@ contract Mystic is ReentrancyGuard {
 
     function sponsorProposal(uint256 proposalId) external nonReentrant onlyDelegate {
         // collect proposal deposit from sponsor & store it in the Mystic until the proposal is processed
-        require(IERC20(depositToken).transferFrom(msg.sender, address(this), proposalDeposit), "!transfer");
+        IERC20(depositToken).safeTransferFrom(msg.sender, address(this), proposalDeposit);
         unsafeAddToBalance(ESCROW, depositToken, proposalDeposit);
 
         Proposal storage proposal = proposals[proposalId];
@@ -662,7 +665,7 @@ contract Mystic is ReentrancyGuard {
     function _withdrawBalance(address token, uint256 amount) internal {
         require(userTokenBalances[msg.sender][token] >= amount, "!balance");
         
-        require(IERC20(token).transfer(msg.sender, amount), "!transfer");
+        IERC20(token).safeTransfer(msg.sender, amount);
         unsafeSubtractFromBalance(msg.sender, token, amount);
         
         emit Withdraw(msg.sender, token, amount);
@@ -845,7 +848,7 @@ contract Mystic is ReentrancyGuard {
     }
     
     function claimShares(uint256 amount) external nonReentrant {
-        require(IERC20(stakeToken).transferFrom(msg.sender, address(this), amount), "!transfer"); // deposit stake token & claim shares (1:1)
+        IERC20(stakeToken).safeTransferFrom(msg.sender, address(this), amount); // deposit stake token & claim shares (1:1)
         
         // if the sender is already a member, add to their existing shares 
         if (members[msg.sender].exists == 1) {
