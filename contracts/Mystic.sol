@@ -1,10 +1,10 @@
 pragma solidity 0.5.17;
 
-import "./oz/Address.sol";
-import "./oz/SafeMath.sol";
 import "./oz/IERC20.sol";
 import "./IWETH.sol";
+import "./oz/Address.sol";
 import "./oz/SafeERC20.sol";
+import "./oz/SafeMath.sol";
 import "./oz/ReentrancyGuard.sol";
 
 contract Mystic is ReentrancyGuard { 
