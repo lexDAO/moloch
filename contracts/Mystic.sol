@@ -105,11 +105,11 @@ contract Mystic is ReentrancyGuard {
         mapping(address => Vote) votesByMember; // the votes on this proposal by each member
     }
     
-    uint256[] public proposalQueue;
-    mapping(uint256 => Proposal) public proposals;
-    
     address[] public approvedTokens;
     mapping(address => bool) public tokenWhitelist;
+    
+    uint256[] public proposalQueue;
+    mapping(uint256 => Proposal) public proposals;
 
     mapping(address => bool) public proposedToWhitelist;
     mapping(address => bool) public proposedToKick;
