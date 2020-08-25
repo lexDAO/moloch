@@ -22,6 +22,7 @@ contract Mystic is ReentrancyGuard {
     uint256 public gracePeriodLength; // default = 35 periods (7 days)
     uint256 public dilutionBound; // default = 3 - maximum multiplier a YES voter will be obligated to pay in case of mass ragequit
     uint256 public summoningTime; // needed to determine the current period
+    bool private initialized; // tracks deployment status
     
     // HARD-CODED LIMITS
     // These numbers are quite arbitrary; they are small enough to avoid overflows when doing calculations
@@ -103,9 +104,9 @@ contract Mystic is ReentrancyGuard {
         bytes32 details; // proposal details to add context for members 
         mapping(address => Vote) votesByMember; // the votes on this proposal by each member
     }
-
-    mapping(address => bool) public tokenWhitelist;
+    
     address[] public approvedTokens;
+    mapping(address => bool) public tokenWhitelist;
 
     mapping(address => bool) public proposedToWhitelist;
     mapping(address => bool) public proposedToKick;
@@ -113,12 +114,9 @@ contract Mystic is ReentrancyGuard {
     mapping(address => Member) public members;
     mapping(address => address) public memberAddressByDelegateKey;
     
-    mapping(uint256 => Proposal) public proposals;
-
     uint256[] public proposalQueue;
+    mapping(uint256 => Proposal) public proposals;
     
-    bool private initialized;
-
     modifier onlyDelegate {
         require(members[memberAddressByDelegateKey[msg.sender]].shares > 0, "!delegate");
         _;
