@@ -490,13 +490,13 @@ contract Mystic is ReentrancyGuard {
 
         if (didPass) {
             proposal.flags[2] = 1; // didPass
-            (bool success, bytes memory retData) = proposal.applicant.call.value(proposal.tributeOffered)(action);
+            (bool success, bytes memory returndata) = proposal.applicant.call.value(proposal.tributeOffered)(action);
             if (tokenWhitelist[proposal.paymentToken]) {
                 unsafeSubtractFromBalance(GUILD, proposal.paymentToken, proposal.paymentRequested);
                 // if the action proposal spends 100% of guild bank balance for a token, decrement total guild bank tokens
                 if (userTokenBalances[GUILD][proposal.paymentToken] == 0 && proposal.paymentRequested > 0) {totalGuildBankTokens -= 1;}
             }
-            return (success, retData);
+            return (success, returndata);
         }
         
         emit ProcessActionProposal(proposalIndex, proposalId, didPass);
