@@ -1,9 +1,9 @@
 pragma solidity 0.5.17;
 
 import "./oz/SafeMath.sol";
-import "./oz/ReentrancyGuard.sol";
 import "./oz/IERC20.sol";
 import "./IWETH.sol";
+import "./oz/ReentrancyGuard.sol";
 
 contract Mystic is ReentrancyGuard { 
     using SafeMath for uint256;
@@ -389,7 +389,7 @@ contract Mystic is ReentrancyGuard {
         emit SubmitVote(proposalQueue[proposalIndex], proposalIndex, msg.sender, memberAddress, uintVote);
     }
 
-    function processProposal(uint256 proposalIndex) external {
+    function processProposal(uint256 proposalIndex) external nonReentrant {
         _validateProposalForProcessing(proposalIndex);
 
         uint256 proposalId = proposalQueue[proposalIndex];
@@ -598,7 +598,7 @@ contract Mystic is ReentrancyGuard {
         unsafeInternalTransfer(ESCROW, sponsor, depositToken, proposalDeposit - processingReward);
     }
 
-    function ragequit(uint256 sharesToBurn, uint256 lootToBurn) external {
+    function ragequit(uint256 sharesToBurn, uint256 lootToBurn) external nonReentrant {
         require(members[msg.sender].exists == 1, "!member");
         
         _ragequit(msg.sender, sharesToBurn, lootToBurn);
@@ -636,7 +636,7 @@ contract Mystic is ReentrancyGuard {
         emit Ragequit(memberAddress, sharesToBurn, lootToBurn);
     }
 
-    function ragekick(address memberToKick) external onlyDelegate {
+    function ragekick(address memberToKick) external nonReentrant onlyDelegate {
         Member storage member = members[memberToKick];
 
         require(member.jailed != 0, "!jailed");
@@ -685,7 +685,7 @@ contract Mystic is ReentrancyGuard {
     }
 
     // NOTE: requires that delegate key which sent the original proposal cancels, msg.sender == proposal.proposer
-    function cancelProposal(uint256 proposalId) external {
+    function cancelProposal(uint256 proposalId) external nonReentrant {
         Proposal storage proposal = proposals[proposalId];
         require(proposal.flags[0] == 0, "sponsored");
         require(proposal.flags[3] == 0, "cancelled");
@@ -867,7 +867,7 @@ contract Mystic is ReentrancyGuard {
         require(totalShares <= MAX_GUILD_BOUND, "guild maxed");
     }
     
-    function convertSharesToLoot(uint256 sharesToLoot) external {
+    function convertSharesToLoot(uint256 sharesToLoot) external nonReentrant {
         members[msg.sender].shares = members[msg.sender].shares.sub(sharesToLoot);
         members[msg.sender].loot = members[msg.sender].loot.add(sharesToLoot);
         totalShares = totalShares.sub(sharesToLoot);
