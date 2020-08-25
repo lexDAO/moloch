@@ -517,7 +517,6 @@ contract Mystic is ReentrancyGuard {
 
         if (didPass) {
             proposal.flags[2] = 1; // didPass
-
             tokenWhitelist[address(proposal.tributeToken)] = true;
             approvedTokens.push(proposal.tributeToken);
         }
