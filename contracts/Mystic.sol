@@ -461,7 +461,7 @@ contract Mystic is ReentrancyGuard {
         _validateProposalForProcessing(proposalIndex);
         
         uint256 proposalId = proposalQueue[proposalIndex];
-        bytes memory action = actions[proposalId];
+        bytes storage action = actions[proposalId];
         Proposal storage proposal = proposals[proposalId];
         
         require(proposal.flags[6] == 1, "!action");
