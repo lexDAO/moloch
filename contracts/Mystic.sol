@@ -218,8 +218,8 @@ contract Mystic is ReentrancyGuard {
         address actionToken,
         uint256 actionTokenAmount,
         uint256 actionValue,
-        bytes calldata data,
         bytes32 details
+        bytes calldata data
     ) external returns (uint256 proposalId) {
         
         uint8[7] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action]
