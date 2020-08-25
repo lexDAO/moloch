@@ -1,6 +1,6 @@
 pragma solidity 0.5.17;
 
-library SafeMath {
+library SafeMath { // arithmetic wrapper for unit under/overflow check
     function add(uint256 a, uint256 b) internal pure returns (uint256) {
         uint256 c = a + b;
         require(c >= a);
