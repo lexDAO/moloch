@@ -608,7 +608,6 @@ contract Mystic is ReentrancyGuard {
 
         require(member.shares >= sharesToBurn, "!shares");
         require(member.loot >= lootToBurn, "!loot");
-
         require(canRagequit(member.highestIndexYesVote), "!ragequit until highest index proposal member voted YES processes");
 
         uint256 sharesAndLootToBurn = sharesToBurn.add(lootToBurn);
