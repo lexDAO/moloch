@@ -7,4 +7,3 @@ interface IERC20 { // brief interface for erc20 token tx
 
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
 }
- 
