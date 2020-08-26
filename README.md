@@ -1,42 +1,17 @@
 # Moloch v2x:
 [![built-with openzeppelin](https://img.shields.io/badge/built%20with-OpenZeppelin-3677FF)](https://docs.openzeppelin.com/)
-> LexDAO upgrades MolochDAO 2 v3 *ish* 🧙
+> LexDAO upgrades MolochDAO 2 v3 *ish* MYSTIC 🧙
 
-- Mainnet: [0xDb0ee7B3f8136C826Ca0b4fFA51579f01aa0eb82](https://etherscan.io/address/0xDb0ee7B3f8136C826Ca0b4fFA51579f01aa0eb82#code)
-- xDai: [0x35b7f8208eA3B652aFDE3Fdb45d5178Fdd75B1E8](https://blockscout.com/poa/xdai/address/0x35b7f8208eA3B652aFDE3Fdb45d5178Fdd75B1E8/contracts)
-- Kovan: [0xed37684058270a8355175c4d7788ead7d7f79966](https://kovan.etherscan.io/address/0xed37684058270a8355175c4d7788ead7d7f79966#code)
-- Rinkeby: [0x04FDd68b9bd3ADcD15c2dF86a855438b43A76c10](https://rinkeby.etherscan.io/address/0x04FDd68b9bd3ADcD15c2dF86a855438b43A76c10#code)
+- Mainnet: [0xac384422F1123740CC670F6f6fA866b8BFAF8A98](https://etherscan.io/address/0xac384422F1123740CC670F6f6fA866b8BFAF8A98#code)
+**L2**
+- xDai: [0x44fa6A4fb5e1935383C7623D47b1104E5241A865](https://blockscout.com/poa/xdai/address/0x44fa6A4fb5e1935383C7623D47b1104E5241A865/contracts)
+**TESTNET**
+- Kovan: [0x0964Aa9D665628a50E0f27c93858f281d136693d](https://kovan.etherscan.io/address/0x0964Aa9D665628a50E0f27c93858f281d136693d#code)
+- Rinkeby: [0x6568E893C006Bc498f63066e26305519D0ab8FfF](https://rinkeby.etherscan.io/address/0x6568E893C006Bc498f63066e26305519D0ab8FfF#code)
+- Ropsten: [0x35b7f8208eA3B652aFDE3Fdb45d5178Fdd75B1E8](https://ropsten.etherscan.io/address/0x35b7f8208eA3B652aFDE3Fdb45d5178Fdd75B1E8#code)
 
-demo deployments:
-
-* ANJmol: 🦅🍬 [0xCe4340FCdd226220Bbd8a083c2A36EB782a65Bb2](https://etherscan.io/address/0xCe4340FCdd226220Bbd8a083c2A36EB782a65Bb2#code)
-> ANJ holders can wrap into Moloch v2x guild; join LexDAO arbitration protocols
-
-misc:
-
-* test LP (minion) deposits on rinkeby testnet with our LPtest contract: [0x222661a74373afd9d629618a9f0ab8632fedf0d3](https://rinkeby.etherscan.io/address/0x222661a74373afd9d629618a9f0ab8632fedf0d3#code)
-
-***2X UPGRADES INCLUDE:***
-
-* **Summoning Circle** 🔥 👹👹👹 🔥
-> start membership with circle of summoners with unique shares claimable against guild bank
-
-* **Presale Deposit** 💰 
-> presale summoning circle accounts forward collected `depositToken` sum to back shares/loot in guild bank
-
-* **Guild Tokens** 🏵️ 
-> guild shares/loot are tokenized with basic ERC-20 interface / loot is freely transferable, redeemable by members
-
-* **Ether Contributions** 🍬 
-> guild proposals can wrap raw Ether into tokenized wETH
-
-* **Embedded Minion** 👺
-> member votes can trigger arbitrary function calls (e.g., *deposit guild funds into Compound*), based on Raid Guild `Minion`
-
-v2x also reflect various code squash updates to save size for new functions, remove redundant references, and reduce gas costs throughout. 
-
-# v2x Summoning Guide
-> the following values are designed for Rinkeby testnet DAOs using our [Summoner factory](https://rinkeby.etherscan.io/address/0x04fdd68b9bd3adcd15c2df86a855438b43a76c10#writeContract):
+# v2x MYSTIC Summoning Guide
+> the following values are designed for Rinkeby testnet DAOs using our [Summoner factory](https://rinkeby.etherscan.io/address/0x6568E893C006Bc498f63066e26305519D0ab8FfF#writeContract):
 
 `_depositToken` = **0xc778417E063141139Fce010982780140Aa0cD5Ab** | Rinkeby wETH
 
@@ -59,6 +34,25 @@ v2x also reflect various code squash updates to save size for new functions, rem
 `_gracePeriodLength` = **5** | 1 day grace period ''
 
 `_dilutionBound` = **3** | Default Moloch DAO dilution bound
+
+***2X UPGRADES INCLUDE:***
+
+* **Summoning Circle** 🔥 👹👹👹 🔥
+> start membership with circle of summoners with unique shares claimable against guild bank
+
+* **Presale Deposit** 💰 
+> presale summoning circle accounts forward collected `depositToken` sum to back shares/loot in guild bank
+
+* **Guild Tokens** 🏵️ 
+> guild shares/loot are tokenized with basic ERC-20 interface / loot is freely transferable, redeemable by members
+
+* **Ether Contributions** 🍬 
+> guild proposals can wrap raw Ether into tokenized wETH
+
+* **Embedded Minion** 👺
+> member votes can trigger arbitrary function calls (e.g., *deposit guild funds into Compound*), based on Raid Guild `Minion`
+
+v2x also reflect various code squash updates to save size for new functions, remove redundant references, and reduce gas costs throughout. 
 
 STEAL THIS CODE
 
