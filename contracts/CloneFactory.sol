@@ -18,7 +18,7 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-contract CloneFactory { // Mystic implementation of eip-1167 - https://eips.ethereum.org/EIPS/eip-1167
+contract CloneFactory { // Mystic implementation of eip-1167 - see https://eips.ethereum.org/EIPS/eip-1167
     function createClone(address payable target) internal returns (address payable result) {
         bytes20 targetBytes = bytes20(target);
         assembly {
