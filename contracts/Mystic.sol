@@ -8,8 +8,8 @@ import "./oz/SafeMath.sol";
 import "./oz/ReentrancyGuard.sol";
 
 contract Mystic is ReentrancyGuard { 
-    using SafeMath for uint256;
     using SafeERC20 for IERC20;
+    using SafeMath for uint256;
 
     /***************
     GLOBAL CONSTANTS
@@ -531,7 +531,7 @@ contract Mystic is ReentrancyGuard {
         emit ProcessWhitelistProposal(proposalIndex, proposalId, didPass);
     }
 
-    function processGuildKickProposal(uint256 proposalIndex) external {
+    function processGuildKickProposal(uint256 proposalIndex) external nonReentrant {
         _validateProposalForProcessing(proposalIndex);
 
         uint256 proposalId = proposalQueue[proposalIndex];
@@ -671,7 +671,7 @@ contract Mystic is ReentrancyGuard {
         emit Withdraw(msg.sender, token, amount);
     }
 
-    function collectTokens(address token) external onlyDelegate nonReentrant {
+    function collectTokens(address token) external nonReentrant onlyDelegate {
         uint256 amountToCollect = IERC20(token).balanceOf(address(this)).sub(userTokenBalances[TOTAL][token]);
         // only collect if 1) there are tokens to collect & 2) token is whitelisted
         require(amountToCollect > 0, "!amount");
@@ -817,7 +817,10 @@ contract Mystic is ReentrancyGuard {
     /********************
     GUILD TOKEN FUNCTIONS
     ********************/
-    // GETTER FUNCTIONS
+    function allowance(address owner, address spender) external view returns (uint256) { // tracks guild token (loot) allowances 
+        return allowances[owner][spender];
+    }
+    
     function balanceOf(address account) external view returns (uint256) { 
         return balances[account];
     }
@@ -827,10 +830,6 @@ contract Mystic is ReentrancyGuard {
     }
     
     // BALANCE MGMT FUNCTIONS
-    function allowance(address owner, address spender) external view returns (uint256) { // tracks guild token (loot) allowances 
-        return allowances[owner][spender];
-    }
-    
     function approve(address spender, uint256 amount) external returns (bool) {
         require(amount == 0 || allowances[msg.sender][spender] == 0);
         
