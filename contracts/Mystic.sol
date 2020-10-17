@@ -16,7 +16,7 @@ contract Mystic is ReentrancyGuard {
     ***************/
     address public depositToken; // deposit token contract reference - default = wETH
     address public stakeToken; // stake token contract reference for guild voting shares 
-    address public constant wETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // canonical ether token wrapper contract reference for proposals
+    address public constant wETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // canonical ether token wrapper contract reference 
     
     uint256 public proposalDeposit; // default = 10 deposit token 
     uint256 public processingReward; // default = 0.1 - amount of deposit token to give to whoever processes a proposal
@@ -25,7 +25,7 @@ contract Mystic is ReentrancyGuard {
     uint256 public gracePeriodLength; // default = 35 periods (7 days)
     uint256 public dilutionBound; // default = 3 - maximum multiplier a YES voter will be obligated to pay in case of mass ragequit
     uint256 public summoningTime; // needed to determine the current period
-    bool private initialized; // tracks deployment status
+    bool private initialized; // internally tracks token deployment under eip-1167 proxy pattern
     
     // HARD-CODED LIMITS
     // These numbers are quite arbitrary; they are small enough to avoid overflows when doing calculations
@@ -34,10 +34,10 @@ contract Mystic is ReentrancyGuard {
     uint256 constant MAX_TOKEN_WHITELIST_COUNT = 400; // maximum number of whitelisted tokens
     uint256 constant MAX_TOKEN_GUILDBANK_COUNT = 200; // maximum number of tokens with non-zero balance in guildbank
 
-    // BANK TOKEN DETAILS
+    // GUILD TOKEN DETAILS
+    uint8 public constant decimals = 18;
     string public constant name = "MYSTIC DAO";
     string public constant symbol = "MXDAO";
-    uint8 public constant decimals = 18;
 
     // **************
     // EVENT TRACKING
@@ -52,10 +52,12 @@ contract Mystic is ReentrancyGuard {
     event ProcessGuildKickProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, bool didPass);
     event UpdateDelegateKey(address indexed memberAddress, address newDelegateKey);
     event Approval(address indexed owner, address indexed spender, uint256 amount); // guild token (loot) allowance tracking
-    event Transfer(address indexed from, address indexed to, uint256 amount); // guild token mint, burn & (loot) transfer tracking
+    event Transfer(address indexed sender, address indexed recipient, uint256 amount); // guild token mint, burn & (loot) transfer tracking
     event Ragequit(address indexed memberAddress, uint256 sharesToBurn, uint256 lootToBurn);
     event TokensCollected(address indexed token, uint256 amountToCollect);
     event Withdraw(address indexed memberAddress, address token, uint256 amount);
+    event ClaimShares(address indexed memberAddress, uint256 amount);
+    event ConvertSharesToLoot(address indexed memberAddress, uint256 amount);
     
     // *******************
     // INTERNAL ACCOUNTING
@@ -70,8 +72,8 @@ contract Mystic is ReentrancyGuard {
     uint256 public totalGuildBankTokens; // total tokens with non-zero balance in guild bank
 
     mapping(uint256 => bytes) public actions; // proposalId => action data
-    mapping(address => uint256) private balances; // guild token balances
-    mapping(address => mapping(address => uint256)) private allowances; // guild token (loot) allowances
+    mapping(address => uint256) public balanceOf; // guild token balances
+    mapping(address => mapping(address => uint256)) public allowance; // guild token (loot) allowances
     mapping(address => mapping(address => uint256)) private userTokenBalances; // userTokenBalances[userAddress][tokenAddress]
 
     enum Vote {
@@ -139,7 +141,7 @@ contract Mystic is ReentrancyGuard {
         uint256 _dilutionBound
     ) external {
         require(!initialized, "initialized");
-        require(_depositToken != _stakeToken, "depositToken == stakeToken");
+        require(_depositToken != _stakeToken, "depositToken = stakeToken");
         require(_summoner.length == _summonerShares.length, "summoner != summonerShares");
         require(_proposalDeposit >= _processingReward, "_processingReward > _proposalDeposit");
         
@@ -169,7 +171,6 @@ contract Mystic is ReentrancyGuard {
         dilutionBound = _dilutionBound;
         summoningTime = now;
         initialized = true;
-        
         _initReentrancyGuard();
     }
     
@@ -185,7 +186,7 @@ contract Mystic is ReentrancyGuard {
         uint256 paymentRequested,
         address paymentToken,
         bytes32 details
-    ) payable external nonReentrant returns (uint256 proposalId) {
+    ) external nonReentrant payable returns (uint256 proposalId) {
         require(sharesRequested.add(lootRequested) <= MAX_GUILD_BOUND, "guild maxed");
         require(tokenWhitelist[tributeToken], "tributeToken != whitelist");
         require(tokenWhitelist[paymentToken], "paymentToken != whitelist");
@@ -198,10 +199,10 @@ contract Mystic is ReentrancyGuard {
         
         // collect tribute from proposer & store it in the Mystic until the proposal is processed - if ether, wrap into wETH
         if (tributeToken == wETH && msg.value > 0) {
-            require(msg.value == tributeOffered, "!ETH");
+            require(msg.value == tributeOffered, "!ethBalance");
             IWETH(wETH).deposit();
-            (bool success, ) = wETH.call.value(msg.value)("");
-            require(success, "!transfer");
+            (bool success, ) = wETH.call{value: msg.value}("");
+            require(success, "!ethCall");
             IWETH(wETH).transfer(address(this), msg.value);
         } else {
             IERC20(tributeToken).safeTransferFrom(msg.sender, address(this), tributeOffered);
@@ -235,7 +236,7 @@ contract Mystic is ReentrancyGuard {
     
     function submitWhitelistProposal(address tokenToWhitelist, bytes32 details) external returns (uint256 proposalId) {
         require(tokenToWhitelist != address(0), "!token");
-        require(tokenToWhitelist != stakeToken, "tokenToWhitelist == stakeToken");
+        require(tokenToWhitelist != stakeToken, "tokenToWhitelist = stakeToken");
         require(!tokenWhitelist[tokenToWhitelist], "whitelisted");
         require(approvedTokens.length < MAX_TOKEN_WHITELIST_COUNT, "whitelist maxed");
 
@@ -352,7 +353,7 @@ contract Mystic is ReentrancyGuard {
     }
 
     // NOTE: In Mystic, proposalIndex != proposalId
-    function submitVote(uint256 proposalIndex, uint8 uintVote) external onlyDelegate {
+    function submitVote(uint256 proposalIndex, uint8 uintVote) external nonReentrant onlyDelegate {
         address memberAddress = memberAddressByDelegateKey[msg.sender];
         Member storage member = members[memberAddress];
 
@@ -473,7 +474,7 @@ contract Mystic is ReentrancyGuard {
 
         bool didPass = _didPass(proposalIndex);
         
-        // Make the proposal fail if it is requesting more stake token than the available local balance
+        // Make the proposal fail if it is requesting more stake tokens than the available local balance
         if (proposal.paymentToken == stakeToken && proposal.paymentRequested > IERC20(stakeToken).balanceOf(address(this))) {
             didPass = false;
         }
@@ -490,7 +491,7 @@ contract Mystic is ReentrancyGuard {
 
         if (didPass) {
             proposal.flags[2] = 1; // didPass
-            (bool success, bytes memory returnData) = proposal.applicant.call.value(proposal.tributeOffered)(action);
+            (bool success, bytes memory returnData) = proposal.applicant.call{value: proposal.tributeOffered}(action);
             if (tokenWhitelist[proposal.paymentToken]) {
                 unsafeSubtractFromBalance(GUILD, proposal.paymentToken, proposal.paymentRequested);
                 // if the action proposal spends 100% of guild bank balance for a token, decrement total guild bank tokens
@@ -502,7 +503,7 @@ contract Mystic is ReentrancyGuard {
         emit ProcessActionProposal(proposalIndex, proposalId, didPass);
     }
 
-    function processWhitelistProposal(uint256 proposalIndex) external {
+    function processWhitelistProposal(uint256 proposalIndex) external nonReentrant {
         _validateProposalForProcessing(proposalIndex);
 
         uint256 proposalId = proposalQueue[proposalIndex];
@@ -683,7 +684,7 @@ contract Mystic is ReentrancyGuard {
         emit TokensCollected(token, amountToCollect);
     }
 
-    // NOTE: requires that delegate key which sent the original proposal cancels, msg.sender == proposal.proposer
+    // NOTE: requires that delegate key which sent the original proposal cancels, msg.sender = proposal.proposer
     function cancelProposal(uint256 proposalId) external nonReentrant {
         Proposal storage proposal = proposals[proposalId];
         require(proposal.flags[0] == 0, "sponsored");
@@ -697,9 +698,9 @@ contract Mystic is ReentrancyGuard {
         emit CancelProposal(proposalId, msg.sender);
     }
 
-    function updateDelegateKey(address newDelegateKey) external {
+    function updateDelegateKey(address newDelegateKey) external nonReentrant {
         require(members[msg.sender].shares > 0, "caller !shareholder");
-        require(newDelegateKey != address(0), "newDelegateKey == 0");
+        require(newDelegateKey != address(0), "newDelegateKey = 0");
 
         // skip checks if member is setting the delegate key to their member address
         if (newDelegateKey != msg.sender) {
@@ -763,7 +764,7 @@ contract Mystic is ReentrancyGuard {
     /***************
     HELPER FUNCTIONS
     ***************/
-    function() external payable {}
+    receive() external payable {}
     
     function fairShare(uint256 balance, uint256 shares, uint256 totalSharesAndLoot) internal pure returns (uint256) {
         require(totalSharesAndLoot != 0);
@@ -817,23 +818,10 @@ contract Mystic is ReentrancyGuard {
     /********************
     GUILD TOKEN FUNCTIONS
     ********************/
-    function allowance(address owner, address spender) external view returns (uint256) { // tracks guild token (loot) allowances 
-        return allowances[owner][spender];
-    }
-    
-    function balanceOf(address account) external view returns (uint256) { 
-        return balances[account];
-    }
-    
-    function totalSupply() public view returns (uint256) { 
-        return totalShares.add(totalLoot);
-    }
-    
-    // BALANCE MGMT FUNCTIONS
     function approve(address spender, uint256 amount) external returns (bool) {
-        require(amount == 0 || allowances[msg.sender][spender] == 0);
+        require(amount == 0 || allowance[msg.sender][spender] == 0);
         
-        allowances[msg.sender][spender] = amount;
+        allowance[msg.sender][spender] = amount;
         
         emit Approval(msg.sender, spender, amount);
         
@@ -841,8 +829,7 @@ contract Mystic is ReentrancyGuard {
     }
     
     function burnGuildToken(address memberAddress, uint256 amount) internal {
-        balances[memberAddress] = balances[memberAddress].sub(amount);
-        
+        balanceOf[memberAddress] = balanceOf[memberAddress].sub(amount);
         emit Transfer(memberAddress, address(0), amount);
     }
     
@@ -863,44 +850,50 @@ contract Mystic is ReentrancyGuard {
         totalShares = totalShares.add(amount);
             
         require(totalShares <= MAX_GUILD_BOUND, "guild maxed");
+        
+        emit ClaimShares(msg.sender, amount);
     }
     
     function convertSharesToLoot(uint256 sharesToLoot) external nonReentrant {
         members[msg.sender].shares = members[msg.sender].shares.sub(sharesToLoot);
         members[msg.sender].loot = members[msg.sender].loot.add(sharesToLoot);
+        
         totalShares = totalShares.sub(sharesToLoot);
         totalLoot = totalLoot.add(sharesToLoot);
+        
+        emit ConvertSharesToLoot(msg.sender, sharesToLoot);
     }
     
     function mintGuildToken(address memberAddress, uint256 amount) internal {
-        balances[memberAddress] = balances[memberAddress].add(amount);
-        
+        balanceOf[memberAddress] = balanceOf[memberAddress].add(amount);
         emit Transfer(address(0), memberAddress, amount);
     }
+    
+    function totalSupply() public view returns (uint256) { 
+        return totalShares.add(totalLoot);
+    }
 
-    // LOOT TRANSFER FUNCTIONS
-    function transfer(address receiver, uint256 lootToTransfer) external returns (bool) {
+    function transfer(address recipient, uint256 lootToTransfer) external returns (bool) {
         members[msg.sender].loot = members[msg.sender].loot.sub(lootToTransfer);
-        members[receiver].loot = members[receiver].loot.add(lootToTransfer);
+        members[recipient].loot = members[recipient].loot.add(lootToTransfer);
         
-        balances[msg.sender] = balances[msg.sender].sub(lootToTransfer);
-        balances[receiver] = balances[receiver].add(lootToTransfer);
+        balanceOf[msg.sender] = balanceOf[msg.sender].sub(lootToTransfer);
+        balanceOf[recipient] = balanceOf[recipient].add(lootToTransfer);
         
-        emit Transfer(msg.sender, receiver, lootToTransfer);
+        emit Transfer(msg.sender, recipient, lootToTransfer);
         
         return true;
     }
     
-    function transferFrom(address sender, address receiver, uint256 lootToTransfer) external returns (bool) {
-        allowances[sender][msg.sender] = allowances[sender][msg.sender].sub(lootToTransfer);
-        
+    function transferFrom(address sender, address recipient, uint256 lootToTransfer) external returns (bool) {
+        allowance[sender][msg.sender] = allowance[sender][msg.sender].sub(lootToTransfer);
         members[sender].loot = members[sender].loot.sub(lootToTransfer);
-        members[receiver].loot = members[receiver].loot.add(lootToTransfer);
+        members[recipient].loot = members[recipient].loot.add(lootToTransfer);
         
-        balances[sender] = balances[sender].sub(lootToTransfer);
-        balances[receiver] = balances[receiver].add(lootToTransfer);
+        balanceOf[sender] = balanceOf[sender].sub(lootToTransfer);
+        balanceOf[recipient] = balanceOf[recipient].add(lootToTransfer);
         
-        emit Transfer(sender, receiver, lootToTransfer);
+        emit Transfer(sender, recipient, lootToTransfer);
         
         return true;
     }
