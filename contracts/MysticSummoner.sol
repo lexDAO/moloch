@@ -1,6 +1,6 @@
 pragma solidity 0.6.12;
 
-import "./Moloch.sol";
+import "./Mystic.sol";
 import "./CloneFactory.sol";
 
 contract MysticSummoner is CloneFactory { 
