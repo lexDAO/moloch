@@ -1,4 +1,4 @@
-pragma solidity 0.5.17;
+pragma solidity 0.6.12;
 
 contract ReentrancyGuard { // call wrapper for reentrancy check
     bool private _notEntered;
@@ -8,7 +8,7 @@ contract ReentrancyGuard { // call wrapper for reentrancy check
     }
 
     modifier nonReentrant() {
-        require(_notEntered, "ReentrancyGuard: reentrant call");
+        require(_notEntered, "reentrant");
 
         _notEntered = false;
 
