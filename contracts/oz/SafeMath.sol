@@ -1,4 +1,4 @@
-pragma solidity 0.5.17;
+pragma solidity 0.6.12;
 
 library SafeMath { // arithmetic wrapper for unit under/overflow check
     function add(uint256 a, uint256 b) internal pure returns (uint256) {
