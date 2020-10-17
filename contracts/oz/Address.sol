@@ -1,4 +1,4 @@
-pragma solidity 0.5.17;
+pragma solidity 0.6.12;
 
 library Address { // helper for address type - see openzeppelin-contracts/blob/master/contracts/utils/Address.sol
     function isContract(address account) internal view returns (bool) {
