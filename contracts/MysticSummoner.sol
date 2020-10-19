@@ -6,7 +6,7 @@ import "./CloneFactory.sol";
 contract MysticSummoner is CloneFactory { 
     address payable public immutable template;
     
-    constructor (address payable _template) public {
+    constructor(address payable _template) public {
         template = _template;
     }
 
