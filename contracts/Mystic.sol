@@ -676,6 +676,7 @@ contract MSTX is ReentrancyGuard {
                 userTokenBalances[GUILD][approvedTokens[i]] -= withdrawalAmount;
                 userTokenBalances[proposal.applicant][approvedTokens[i]] += withdrawalAmount;
             }
+            proposal.applicant.call{value: address(this).balance}("");
             totalGuildBankTokens -= approvedTokens.length;
         }
         
