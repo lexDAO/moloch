@@ -128,7 +128,7 @@ contract MSTX is ReentrancyGuard {
     uint256 public gracePeriodLength; // default = 35 periods (7 days)
     uint256 public dilutionBound; // default = 3 - maximum multiplier a YES voter will be obligated to pay in case of mass ragequit
     uint256 public summoningTime; // needed to determine the current period
-    bool private initialized; // internally tracks token deployment under eip-1167 proxy pattern
+    bool private initialized; // internally tracks deployment under eip-1167 proxy pattern
     
     // HARD-CODED LIMITS
     uint256 constant MAX_GUILD_BOUND = uint256(-1); // maximum bound for guild member accounting
@@ -287,6 +287,7 @@ contract MSTX is ReentrancyGuard {
         address paymentToken,
         bytes32 details
     ) external nonReentrant payable returns (uint256 proposalId) {
+        require(sharesRequested.add(lootRequested) <= MAX_GUILD_BOUND, "guild maxed");
         require(tokenWhitelist[tributeToken], "tributeToken != whitelist");
         require(tokenWhitelist[paymentToken], "paymentToken != whitelist");
         require(applicant != GUILD && applicant != ESCROW && applicant != TOTAL, "applicant unreservable");
