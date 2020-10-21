@@ -2,21 +2,11 @@
 [![built-with openzeppelin](https://img.shields.io/badge/built%20with-OpenZeppelin-3677FF)](https://docs.openzeppelin.com/)
 > LexDAO upgrades MolochDAO 2 v3 *ish* MYSTIC 🧙
 
-- Mainnet: [0x2392AC7c7135a091B3F952C2f8ba09517DB85Ed0](https://etherscan.io/address/0x2392AC7c7135a091B3F952C2f8ba09517DB85Ed0#code)
-
-**L2**
-- xDai: [0x44fa6A4fb5e1935383C7623D47b1104E5241A865](https://blockscout.com/poa/xdai/address/0x44fa6A4fb5e1935383C7623D47b1104E5241A865/contracts)
-- IDChain: [0x42beD0785Ec8E50FFf1d0DA0cDe7900C62bD70A3](https://explorer.idchain.one/address/0x42beD0785Ec8E50FFf1d0DA0cDe7900C62bD70A3/contracts)
-
-**TESTNET**
-- Kovan: [0x0964Aa9D665628a50E0f27c93858f281d136693d](https://kovan.etherscan.io/address/0x0964Aa9D665628a50E0f27c93858f281d136693d#code)
-- Rinkeby: [0x6568E893C006Bc498f63066e26305519D0ab8FfF](https://rinkeby.etherscan.io/address/0x6568E893C006Bc498f63066e26305519D0ab8FfF#code)
-- Ropsten: [0x35b7f8208eA3B652aFDE3Fdb45d5178Fdd75B1E8](https://ropsten.etherscan.io/address/0x35b7f8208eA3B652aFDE3Fdb45d5178Fdd75B1E8#code)
+- Mainnet: [0xf2626FE8e375EA4984d44dE6f682b0058a231407](https://etherscan.io/address/0xf2626FE8e375EA4984d44dE6f682b0058a231407#code)
 
 # v2x MYSTIC Summoning Guide
-> the following values are designed for Rinkeby testnet DAOs using our [Summoner factory](https://rinkeby.etherscan.io/address/0x6568E893C006Bc498f63066e26305519D0ab8FfF#writeContract):
 
-`_depositToken` = **0xc778417E063141139Fce010982780140Aa0cD5Ab** | Rinkeby wETH
+`_depositToken` = **0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2** | wETH
 
 `_stakeToken` = **0x0000000000000000000000000000000000000000** | Burner Address (stake tokens are more advanced use case)
 
