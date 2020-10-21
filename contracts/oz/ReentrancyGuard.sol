@@ -1,19 +1,18 @@
 pragma solidity 0.6.12;
 
 contract ReentrancyGuard { // call wrapper for reentrancy check
-    bool private _notEntered;
+    uint256 private constant _NOT_ENTERED = 1;
+    uint256 private constant _ENTERED = 2;
+    uint256 private _status;
 
-    function _initReentrancyGuard () internal {
-        _notEntered = true;
+    constructor() internal {
+        _status = _NOT_ENTERED;
     }
 
     modifier nonReentrant() {
-        require(_notEntered, "reentrant");
-
-        _notEntered = false;
-
+        require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
+        _status = _ENTERED;
         _;
-
-        _notEntered = true;
+        _status = _NOT_ENTERED;
     }
 }
