@@ -3,16 +3,16 @@ pragma solidity 0.6.12;
 import "./Mystic.sol";
 import "./CloneFactory.sol";
 
-contract MysticSummoner is CloneFactory { 
+contract MSTXSummoner is CloneFactory { 
     address payable public immutable template;
     
-    constructor (address payable _template) public {
+    constructor(address payable _template) public {
         template = _template;
     }
 
-    event SummonMystic(address indexed myst, address depositToken, address stakeToken, address[] summoner, uint256[] summonerShares, uint256 summoningDeposit, uint256 proposalDeposit, uint256 processingReward, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 dilutionBound, uint256 summoningTime);
+    event SummonMSTX(address indexed mstx, address depositToken, address stakeToken, address[] summoner, uint256[] summonerShares, uint256 summoningDeposit, uint256 proposalDeposit, uint256 processingReward, uint256 periodDuration, uint256 votingPeriodLength, uint256 gracePeriodLength, uint256 dilutionBound, uint256 summoningTime);
  
-    function summonMystic(
+    function summonMSTX(
         address _depositToken,
         address _stakeToken,
         address[] memory _summoner,
@@ -25,9 +25,9 @@ contract MysticSummoner is CloneFactory {
         uint256 _gracePeriodLength,
         uint256 _dilutionBound
     ) external returns (address) {
-        Mystic myst = Mystic(createClone(template));
+        MSTX mstx = MSTX(createClone(template));
         
-        myst.init(
+        mstx.init(
             _depositToken,
             _stakeToken,
             _summoner,
@@ -41,10 +41,10 @@ contract MysticSummoner is CloneFactory {
             _dilutionBound
         );
         
-        require(IERC20(_depositToken).transferFrom(msg.sender, address(myst), _summonerDeposit), "!transfer"); // transfer summoner deposit to new Mystic
+        require(IERC20(_depositToken).transferFrom(msg.sender, address(mstx), _summonerDeposit), "!transfer"); // transfer summoner deposit to new MSTX
         
-        emit SummonMystic(address(myst), _depositToken, _stakeToken, _summoner, _summonerShares, _summonerDeposit, _proposalDeposit, _processingReward, _periodDuration, _votingPeriodLength, _gracePeriodLength, _dilutionBound, now);
+        emit SummonMSTX(address(mstx), _depositToken, _stakeToken, _summoner, _summonerShares, _summonerDeposit, _proposalDeposit, _processingReward, _periodDuration, _votingPeriodLength, _gracePeriodLength, _dilutionBound, now);
         
-        return address(myst);
+        return address(mstx);
     }
 }
