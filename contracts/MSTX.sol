@@ -6,7 +6,7 @@ import "./oz/SafeERC20.sol";
 import "./oz/SafeMath.sol";
 import "./oz/ReentrancyGuard.sol";
 
-contract MSTX is ReentrancyGuard { 
+contract MYSTIC is ReentrancyGuard { 
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -32,8 +32,8 @@ contract MSTX is ReentrancyGuard {
 
     // GUILD TOKEN DETAILS
     uint8 public constant decimals = 18;
-    string public constant name = "MSTX";
-    string public constant symbol = "MSTX";
+    string public name; // set at summoning
+    string public constant symbol = "DAO";
     
     // *******************
     // INTERNAL ACCOUNTING
@@ -47,7 +47,6 @@ contract MSTX is ReentrancyGuard {
     uint256 public totalSupply; // total shares & loot across all members (total guild tokens)
     uint256 public totalGuildBankTokens; // total tokens with non-zero balance in guild bank
 
-    mapping(uint256 => bytes) public actions; // proposalId => action data
     mapping(address => uint256) public balanceOf; // guild token balances
     mapping(address => mapping(address => uint256)) public allowance; // guild token (loot) allowances
     mapping(address => mapping(address => uint256)) private userTokenBalances; // userTokenBalances[userAddress][tokenAddress]
@@ -56,6 +55,7 @@ contract MSTX is ReentrancyGuard {
     mapping(address => bool) public tokenWhitelist;
     
     uint256[] public proposalQueue;
+    mapping(uint256 => bytes) public actions; 
     mapping(uint256 => Proposal) public proposals;
 
     mapping(address => bool) public proposedToWhitelist;
@@ -67,7 +67,7 @@ contract MSTX is ReentrancyGuard {
     // **************
     // EVENT TRACKING
     // **************
-    event SubmitProposal(address indexed applicant, uint256 sharesRequested, uint256 lootRequested, uint256 tributeOffered, address tributeToken, uint256 paymentRequested, address paymentToken, bytes32 details, uint8[9] flags, bytes data, uint256 proposalId, address indexed delegateKey, address indexed memberAddress);
+    event SubmitProposal(address indexed applicant, uint256 sharesRequested, uint256 lootRequested, uint256 tributeOffered, address tributeToken, uint256 paymentRequested, address paymentToken, bytes32 details, uint8[8] flags, bytes data, uint256 proposalId, address indexed delegateKey, address indexed memberAddress);
     event CancelProposal(uint256 indexed proposalId, address applicantAddress);
     event SponsorProposal(address indexed delegateKey, address indexed memberAddress, uint256 proposalId, uint256 proposalIndex, uint256 startingPeriod);
     event SubmitVote(uint256 proposalId, uint256 indexed proposalIndex, address indexed delegateKey, address indexed memberAddress, uint8 uintVote);
@@ -75,7 +75,6 @@ contract MSTX is ReentrancyGuard {
     event ProcessActionProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, bool didPass);
     event ProcessGuildKickProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, bool didPass);
     event ProcessWhitelistProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, bool didPass);
-    event ProcessWithdrawalProposal(uint256 indexed proposalIndex, uint256 indexed proposalId, bool didPass);
     event UpdateDelegateKey(address indexed memberAddress, address newDelegateKey);
     event Ragequit(address indexed memberAddress, uint256 sharesToBurn, uint256 lootToBurn);
     event TokensCollected(address indexed token, uint256 amountToCollect);
@@ -106,7 +105,7 @@ contract MSTX is ReentrancyGuard {
         address sponsor; // the member that sponsored the proposal (moving it into the queue)
         address tributeToken; // tribute token contract reference
         address paymentToken; // payment token contract reference
-        uint8[9] flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action, withdrawal, standard]
+        uint8[8] flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action, standard]
         uint256 sharesRequested; // the # of shares the applicant is requesting
         uint256 lootRequested; // the amount of loot the applicant is requesting
         uint256 paymentRequested; // amount of tokens requested as payment
@@ -135,7 +134,8 @@ contract MSTX is ReentrancyGuard {
         uint256 _periodDuration,
         uint256 _votingPeriodLength,
         uint256 _gracePeriodLength,
-        uint256 _dilutionBound
+        uint256 _dilutionBound,
+        string memory _guildName
     ) external {
         require(!initialized, "initialized");
         require(_depositToken != _stakeToken, "depositToken = stakeToken");
@@ -164,6 +164,7 @@ contract MSTX is ReentrancyGuard {
         gracePeriodLength = _gracePeriodLength;
         dilutionBound = _dilutionBound;
         summoningTime = now;
+        name = _guildName;
         initialized = true;
     }
     
@@ -190,7 +191,7 @@ contract MSTX is ReentrancyGuard {
             require(totalGuildBankTokens < MAX_TOKEN_GUILDBANK_COUNT, "guildbank maxed");
         }
         
-        // collect tribute from proposer & store it in MSTX until the proposal is processed - if ether, wrap into wETH
+        // collect tribute from proposer & store it in MYSTIC until the proposal is processed - if ether, wrap into wETH
         if (msg.value > 0) {
             require(tributeToken == wETH && msg.value == tributeOffered, "!ethBalance");
             (bool success, ) = wETH.call{value: msg.value}("");
@@ -202,8 +203,8 @@ contract MSTX is ReentrancyGuard {
         
         unsafeAddToBalance(ESCROW, tributeToken, tributeOffered);
         
-        uint8[9] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action, withdrawal, standard]
-        flags[8] = 1; // standard
+        uint8[8] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action, standard]
+        flags[7] = 1; // standard
 
         _submitProposal(applicant, sharesRequested, lootRequested, tributeOffered, tributeToken, paymentRequested, paymentToken, details, flags, "");
         
@@ -216,8 +217,8 @@ contract MSTX is ReentrancyGuard {
         uint256 actionValue, // ether value, if any, in call 
         bytes32 details, // details tx staged for member execution - as external, extra care should be applied in diligencing action 
         bytes calldata data // data for function call
-    ) external returns (uint256 proposalId) {
-        uint8[9] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action, withdrawal, standard]
+    ) external nonReentrant returns (uint256 proposalId) {
+        uint8[8] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action, standard]
         flags[6] = 1; // action
         
         _submitProposal(actionTo, 0, 0, actionValue, address(0), actionTokenAmount, address(0), details, flags, data);
@@ -225,11 +226,11 @@ contract MSTX is ReentrancyGuard {
         return proposalCount - 1;
     }
 
-    function submitGuildKickProposal(address memberToKick, bytes32 details) external returns (uint256 proposalId) {
+    function submitGuildKickProposal(address memberToKick, bytes32 details) external nonReentrant returns (uint256 proposalId) {
         Member memory member = members[memberToKick];
         require(member.shares > 0 || member.loot > 0, "!share||loot");
         require(members[memberToKick].jailed == 0, "jailed");
-        uint8[9] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action, withdrawal, standard]
+        uint8[8] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action, standard]
         flags[5] = 1; // guildkick
 
         _submitProposal(memberToKick, 0, 0, 0, address(0), 0, address(0), details, flags, "");
@@ -237,28 +238,19 @@ contract MSTX is ReentrancyGuard {
         return proposalCount - 1;
     }
     
-    function submitWhitelistProposal(address tokenToWhitelist, bytes32 details) external returns (uint256 proposalId) {
+    function submitWhitelistProposal(address tokenToWhitelist, bytes32 details) external nonReentrant returns (uint256 proposalId) {
         require(tokenToWhitelist != address(0), "!token");
         require(tokenToWhitelist != stakeToken, "tokenToWhitelist = stakeToken");
         require(!tokenWhitelist[tokenToWhitelist], "whitelisted");
         require(approvedTokens.length < MAX_TOKEN_WHITELIST_COUNT, "whitelist maxed");
-        uint8[9] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action, withdrawal, standard]
+        uint8[8] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action, standard]
         flags[4] = 1; // whitelist
 
         _submitProposal(address(0), 0, 0, 0, tokenToWhitelist, 0, address(0), details, flags, "");
         
         return proposalCount - 1;
     }
-    
-    function submitWithdrawalProposal(address withdrawalTo, bytes32 details) external returns (uint256 proposalId) {
-        uint8[9] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick, action, withdrawal, standard]
-        flags[7] = 1; // withdrawal
 
-        _submitProposal(withdrawalTo, 0, 0, 0, address(0), 0, address(0), details, flags, "");
-        
-        return proposalCount - 1;
-    }
-   
     function _submitProposal(
         address applicant,
         uint256 sharesRequested,
@@ -268,7 +260,7 @@ contract MSTX is ReentrancyGuard {
         uint256 paymentRequested,
         address paymentToken,
         bytes32 details,
-        uint8[9] memory flags,
+        uint8[8] memory flags,
         bytes memory data
     ) internal {
         Proposal memory proposal = Proposal({
@@ -301,7 +293,7 @@ contract MSTX is ReentrancyGuard {
     }
 
     function sponsorProposal(uint256 proposalId) external nonReentrant onlyDelegate {
-        // collect proposal deposit from sponsor & store it in MSTX until the proposal is processed
+        // collect proposal deposit from sponsor & store it in MYSTIC until the proposal is processed
         IERC20(depositToken).safeTransferFrom(msg.sender, address(this), proposalDeposit);
         unsafeAddToBalance(ESCROW, depositToken, proposalDeposit);
         Proposal storage proposal = proposals[proposalId];
@@ -342,7 +334,7 @@ contract MSTX is ReentrancyGuard {
         emit SponsorProposal(msg.sender, proposal.sponsor, proposalId, proposalQueue.length - 1, startingPeriod);
     }
 
-    // NOTE: In MSTX, proposalIndex != proposalId
+    // NOTE: In MYSTIC, proposalIndex != proposalId
     function submitVote(uint256 proposalIndex, uint8 uintVote) external nonReentrant onlyDelegate {
         address memberAddress = memberAddressByDelegateKey[msg.sender];
         Member storage member = members[memberAddress];
@@ -382,7 +374,7 @@ contract MSTX is ReentrancyGuard {
         _validateProposalForProcessing(proposalIndex);
         uint256 proposalId = proposalQueue[proposalIndex];
         Proposal storage proposal = proposals[proposalId];
-        require(proposal.flags[8] == 1, "!standard");
+        require(proposal.flags[7] == 1, "!standard");
         proposal.flags[1] = 1; // processed
         
         bool didPass = _didPass(proposalIndex);
@@ -492,7 +484,7 @@ contract MSTX is ReentrancyGuard {
         emit ProcessGuildKickProposal(proposalIndex, proposalId, didPass);
     }
     
-    function processWhitelistProposal(uint256 proposalIndex) external {
+    function processWhitelistProposal(uint256 proposalIndex) external nonReentrant {
         _validateProposalForProcessing(proposalIndex);
         uint256 proposalId = proposalQueue[proposalIndex];
         Proposal storage proposal = proposals[proposalId];
@@ -517,31 +509,6 @@ contract MSTX is ReentrancyGuard {
         emit ProcessWhitelistProposal(proposalIndex, proposalId, didPass);
     }
     
-    function processWithdrawalProposal(uint256 proposalIndex) external nonReentrant {
-        _validateProposalForProcessing(proposalIndex);
-        uint256 proposalId = proposalQueue[proposalIndex];
-        Proposal storage proposal = proposals[proposalId];
-        require(proposal.flags[7] == 1, "!withdrawal");
-        proposal.flags[1] = 1; // processed
-
-        bool didPass = _didPass(proposalIndex);
-        if (didPass) {
-            proposal.flags[2] = 1; // didPass
-            for (uint256 i = 0; i < approvedTokens.length; i++) {
-                // deliberately not using safemath here to keep overflows from preventing the function execution (which would break withdrawal)
-                // if a token overflows, it is because the supply was artificially inflated to oblivion, so we probably don't care about it anyways
-                uint256 withdrawalAmount = userTokenBalances[GUILD][approvedTokens[i]];
-                userTokenBalances[GUILD][approvedTokens[i]] -= withdrawalAmount;
-                userTokenBalances[proposal.applicant][approvedTokens[i]] += withdrawalAmount;
-            }
-            totalGuildBankTokens -= approvedTokens.length;
-        }
-        
-        _returnDeposit(proposal.sponsor);
-        
-        emit ProcessWithdrawalProposal(proposalIndex, proposalId, didPass);
-    }
-
     function _didPass(uint256 proposalIndex) internal view returns (bool didPass) {
         Proposal memory proposal = proposals[proposalQueue[proposalIndex]];
         
@@ -667,7 +634,7 @@ contract MSTX is ReentrancyGuard {
         emit CancelProposal(proposalId, msg.sender);
     }
 
-    function updateDelegateKey(address newDelegateKey) external {
+    function updateDelegateKey(address newDelegateKey) external nonReentrant {
         require(members[msg.sender].shares > 0, "!shareholder");
         require(newDelegateKey != address(0), "newDelegateKey = 0");
 
@@ -712,7 +679,7 @@ contract MSTX is ReentrancyGuard {
         return proposals[proposalQueue[proposalIndex]].votesByMember[memberAddress];
     }
 
-    function getProposalFlags(uint256 proposalId) external view returns (uint8[9] memory) {
+    function getProposalFlags(uint256 proposalId) external view returns (uint8[8] memory) {
         return proposals[proposalId].flags;
     }
     
