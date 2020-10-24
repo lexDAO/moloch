@@ -2,7 +2,7 @@
 [![built-with openzeppelin](https://img.shields.io/badge/built%20with-OpenZeppelin-3677FF)](https://docs.openzeppelin.com/)
 > LexDAO upgrades MolochDAO 2 v3 *ish* MYSTIC 🧙
 
-- Mainnet: [0xf2626FE8e375EA4984d44dE6f682b0058a231407](https://etherscan.io/address/0xf2626FE8e375EA4984d44dE6f682b0058a231407#code)
+- Mainnet: [0x5E4EfA02717Cd9261000d94faf79Fc54347006aa](https://etherscan.io/address/0x5E4EfA02717Cd9261000d94faf79Fc54347006aa#code)
 
 # v2x MYSTIC Summoning Guide
 
