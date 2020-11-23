@@ -10,9 +10,9 @@
 
 `_stakeToken` = **0x0000000000000000000000000000000000000000** | Burner Address (stake tokens are more advanced use case)
 
-`_summoner` = **["YOUR ETH ADDRESS"]** | Can add more summoner members to array
+`_summoner` = **[YOUR ETH ADDRESS]** | Can add more summoner members to array
 
-`_summonerShares` = **["1000000000000000000"]** | Use large wei amount to reflect "1" share via 18 decimal guild token; can add more summoner allocations
+`_summonerShares` = **[1000000000000000000]** | Use large wei amount to reflect "1" share via 18 decimal guild token; can add more summoner allocations
 
 `_summonerDeposit` = **0** | For ease of deployment, omit contribution forwarding function from factory to new DAO; otherwise, approve factory as spender of amount
 
