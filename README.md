@@ -28,6 +28,8 @@
 
 `_dilutionBound` = **3** | Default Moloch DAO dilution bound
 
+`_guildName` = **GUILD NAME** | Select a name or other context to stamp into DAO.
+
 ***2X UPGRADES INCLUDE:***
 
 * **Summoning Circle** 🔥 👹👹👹 🔥
